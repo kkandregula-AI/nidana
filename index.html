@@ -1,0 +1,2305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A0F1A">
+<meta name="description" content="NIDANA — how AI reasons about disease, and where it fails. Episode 13 of the AI Education Series.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NIDANA">
+<title>NIDĀNA — Diagnosis, Probability & the Limits of Clinical AI</title>
+<style>
+:root{
+  --void:#080D16; --slate:#101827; --slate2:#172133; --slate3:#1E2B41;
+  --line:#28374F; --line2:#35486604;
+  --paper:#E7EDF5; --paper2:#B9C6D8; --muted:#7D8FA8; --faint:#556880;
+  --amber:#F0AE3C; --amber-d:#8A6218;
+  --lumen:#5FD8EE; --lumen-d:#1C5E6E;
+  --rose:#F2657E; --rose-d:#7A2534;
+  --sage:#6FC79C; --sage-d:#245140;
+  --violet:#A398F2;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, "JetBrains Mono", "Roboto Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --r:3px;
+  --sh:0 1px 0 rgba(255,255,255,.03), 0 8px 28px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;overflow-x:hidden}
+body{
+  background:var(--void); color:var(--paper); font-family:var(--sans);
+  font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+body::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(1200px 700px at 78% -12%, rgba(95,216,238,.07), transparent 62%),
+    radial-gradient(900px 600px at 6% 108%, rgba(240,174,60,.055), transparent 60%);
+}
+#app{position:relative;z-index:1}
+a{color:var(--lumen)}
+button,input,select,textarea{font-family:inherit;font-size:16px}
+::selection{background:rgba(240,174,60,.3)}
+
+/* ---------- type utilities ---------- */
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint)}
+.mono{font-family:var(--mono)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+h1,h2,h3,h4{margin:0;font-weight:600;letter-spacing:-.01em}
+h2{font-size:clamp(21px,3.4vw,27px);line-height:1.2}
+h3{font-size:16px;letter-spacing:.01em}
+p{margin:0 0 12px}
+.lede{color:var(--paper2);font-size:15.5px;max-width:70ch}
+.small{font-size:13.5px;color:var(--muted);line-height:1.5}
+.tiny{font-size:11.5px;color:var(--faint);line-height:1.45}
+
+/* ---------- header ---------- */
+header{
+  position:sticky;top:0;z-index:60;background:rgba(8,13,22,.93);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top);
+}
+.hbar{display:flex;align-items:center;gap:12px;padding:9px 16px;max-width:1400px;margin:0 auto}
+.mark{display:flex;align-items:baseline;gap:9px;min-width:0}
+.mark b{font-family:var(--serif);font-size:20px;font-weight:600;letter-spacing:.04em;color:var(--paper)}
+.mark .dev{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;color:var(--amber);text-transform:uppercase;white-space:nowrap}
+.hspace{flex:1}
+.pill{
+  font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+  border:1px solid var(--line);border-radius:100px;padding:4px 10px;color:var(--muted);
+  display:inline-flex;align-items:center;gap:6px;white-space:nowrap;background:var(--slate)
+}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--sage);box-shadow:0 0 8px var(--sage)}
+.dot.off{background:var(--muted);box-shadow:none}
+.iconbtn{
+  background:var(--slate);border:1px solid var(--line);color:var(--paper2);
+  border-radius:var(--r);padding:6px 11px;cursor:pointer;font-family:var(--mono);
+  font-size:11px;letter-spacing:.1em;text-transform:uppercase
+}
+.iconbtn:hover{border-color:var(--amber);color:var(--amber)}
+.iconbtn:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
+  outline:2px solid var(--amber);outline-offset:2px
+}
+
+/* safety strip */
+.safety{
+  background:linear-gradient(90deg,rgba(242,101,126,.14),rgba(240,174,60,.10));
+  border-bottom:1px solid rgba(242,101,126,.32);
+  padding:6px 16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;
+  text-transform:uppercase;color:#FFC9D2;text-align:center
+}
+
+/* ---------- shell ---------- */
+.shell{display:flex;max-width:1400px;margin:0 auto;gap:0;align-items:flex-start}
+nav.rail{
+  display:none;width:236px;flex:0 0 236px;position:sticky;top:96px;
+  padding:20px 12px 40px;border-right:1px solid var(--line);align-self:flex-start
+}
+.railhead{padding:0 10px 10px}
+.navlink{
+  display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;
+  background:none;border:none;border-left:2px solid transparent;color:var(--muted);
+  padding:9px 10px;cursor:pointer;border-radius:0 var(--r) var(--r) 0;line-height:1.25
+}
+.navlink:hover{color:var(--paper);background:rgba(255,255,255,.028)}
+.navlink.on{color:var(--paper);border-left-color:var(--amber);background:rgba(240,174,60,.075)}
+.navlink .k{font-family:var(--mono);font-size:10px;color:var(--faint);padding-top:3px;min-width:16px}
+.navlink.on .k{color:var(--amber)}
+.navlink .t{font-size:13.5px;font-weight:500}
+.navlink .s{font-size:10.5px;color:var(--faint);display:block;font-family:var(--mono);letter-spacing:.06em}
+.tabs{
+  display:flex;gap:6px;overflow-x:auto;padding:8px 12px;border-bottom:1px solid var(--line);
+  scrollbar-width:none;background:rgba(8,13,22,.9);position:sticky;top:0;z-index:50
+}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  flex:0 0 auto;background:var(--slate);border:1px solid var(--line);color:var(--muted);
+  padding:6px 12px;border-radius:100px;font-family:var(--mono);font-size:11px;
+  letter-spacing:.1em;text-transform:uppercase;cursor:pointer
+}
+.tab.on{border-color:var(--amber);color:var(--amber);background:rgba(240,174,60,.1)}
+main{flex:1;min-width:0;padding:22px 16px 90px}
+@media(min-width:960px){
+  nav.rail{display:block}
+  .tabs{display:none}
+  main{padding:30px 34px 110px}
+}
+
+/* ---------- panels ---------- */
+.panel{display:none;animation:fade .28s ease}
+.panel.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.phead{border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:22px}
+.phead .eyebrow{margin-bottom:7px}
+.phead h2{margin-bottom:9px}
+.card{
+  background:var(--slate);border:1px solid var(--line);border-radius:var(--r);
+  padding:18px;margin-bottom:16px;box-shadow:var(--sh)
+}
+.card.tight{padding:14px}
+.card h3{margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.grid{display:grid;gap:14px}
+@media(min-width:720px){ .g2{grid-template-columns:1fr 1fr} .g3{grid-template-columns:repeat(3,1fr)} }
+.rule{height:1px;background:var(--line);margin:18px 0;border:0}
+
+/* labels */
+.tag{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+  padding:2.5px 7px;border-radius:2px;border:1px solid;white-space:nowrap
+}
+.t-real{color:var(--sage);border-color:var(--sage-d);background:rgba(111,199,156,.09)}
+.t-sim{color:var(--amber);border-color:var(--amber-d);background:rgba(240,174,60,.09)}
+.t-risk{color:var(--rose);border-color:var(--rose-d);background:rgba(242,101,126,.09)}
+.t-info{color:var(--lumen);border-color:var(--lumen-d);background:rgba(95,216,238,.08)}
+.t-mut{color:var(--muted);border-color:var(--line)}
+
+/* case stem — the patient's voice, in serif */
+.stem{
+  font-family:var(--serif);font-size:17px;line-height:1.62;color:#F2F5FA;
+  border-left:2px solid var(--amber);padding:2px 0 2px 16px;margin:0 0 6px
+}
+.stem em{color:var(--amber);font-style:italic}
+
+/* buttons */
+.btn{
+  background:var(--slate2);border:1px solid var(--line);color:var(--paper);
+  padding:9px 15px;border-radius:var(--r);cursor:pointer;font-family:var(--mono);
+  font-size:11.5px;letter-spacing:.11em;text-transform:uppercase
+}
+.btn:hover{border-color:var(--amber);color:var(--amber)}
+.btn.primary{background:rgba(240,174,60,.14);border-color:var(--amber);color:var(--amber)}
+.btn.primary:hover{background:rgba(240,174,60,.24)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* segmented control */
+.seg{display:flex;flex-wrap:wrap;gap:5px;background:var(--void);border:1px solid var(--line);border-radius:var(--r);padding:4px}
+.seg button{
+  flex:1 1 auto;background:none;border:none;color:var(--muted);padding:7px 10px;
+  border-radius:2px;cursor:pointer;font-family:var(--mono);font-size:11px;
+  letter-spacing:.08em;text-transform:uppercase;white-space:nowrap
+}
+.seg button.on{background:var(--slate3);color:var(--paper);box-shadow:inset 0 0 0 1px var(--line)}
+.seg button.on.amber{color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber-d)}
+
+/* ---------- THE LIGHT BOX (signature) ---------- */
+.lightbox{
+  background:linear-gradient(180deg,#060A11,#0B111C);
+  border:1px solid var(--line);border-radius:var(--r);padding:16px 14px 12px;
+  position:relative;overflow:hidden
+}
+.lightbox::after{
+  content:"";position:absolute;left:0;right:0;top:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(95,216,238,.55),transparent)
+}
+.lbhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;gap:10px;flex-wrap:wrap}
+.hyp{margin-bottom:11px}
+.hyprow{display:flex;align-items:baseline;gap:8px;margin-bottom:5px;flex-wrap:wrap}
+.hypname{font-size:14px;font-weight:500}
+.hypnote{font-size:11.5px;color:var(--faint)}
+.hyppct{margin-left:auto;font-family:var(--mono);font-size:14px;font-variant-numeric:tabular-nums;color:var(--paper)}
+.hypdelta{font-family:var(--mono);font-size:10.5px;font-variant-numeric:tabular-nums}
+.up{color:var(--sage)} .down{color:var(--rose)}
+.strip{height:13px;background:#04070C;border:1px solid #16202E;border-radius:2px;overflow:hidden;position:relative}
+.strip i{
+  display:block;height:100%;width:0;border-radius:1px;
+  transition:width .5s cubic-bezier(.22,1,.36,1), box-shadow .5s ease;
+}
+.strip i.lit{background:linear-gradient(90deg,#1C6E80,var(--lumen))}
+.strip i.danger{background:linear-gradient(90deg,#7A2534,var(--rose))}
+.strip .ticks{position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(90deg,transparent 0 calc(10% - 1px),rgba(255,255,255,.07) calc(10% - 1px) 10%)}
+
+/* findings checklist */
+.fgroup{margin-bottom:14px}
+.fgroup > .eyebrow{display:block;margin-bottom:7px;padding-bottom:5px;border-bottom:1px dashed var(--line)}
+.chk{
+  display:flex;gap:10px;align-items:flex-start;padding:8px 9px;border-radius:var(--r);
+  cursor:pointer;border:1px solid transparent;line-height:1.35
+}
+.chk:hover{background:rgba(255,255,255,.03)}
+.chk.on{background:rgba(240,174,60,.09);border-color:var(--amber-d)}
+.chk.dis{opacity:.32;cursor:not-allowed}
+.chk .box{
+  width:15px;height:15px;flex:0 0 15px;border:1px solid var(--line);border-radius:2px;
+  margin-top:2px;display:grid;place-items:center;font-size:10px;color:var(--void);font-family:var(--mono)
+}
+.chk.on .box{background:var(--amber);border-color:var(--amber)}
+.chk .lbl{font-size:13.5px;color:var(--paper2)}
+.chk.on .lbl{color:var(--paper)}
+
+/* ladder */
+.ladder{border-top:1px dashed var(--line);margin-top:8px;padding-top:12px}
+.lrow{display:grid;grid-template-columns:1fr 118px 62px;gap:8px;align-items:center;padding:5px 0;font-size:12.5px}
+.lrow .lname{color:var(--paper2);line-height:1.3}
+.lbar{height:9px;background:#05090F;border:1px solid var(--line);border-radius:2px;position:relative;overflow:hidden}
+.lbar span{position:absolute;top:0;bottom:0;display:block}
+.lbar .mid{left:50%;width:1px;background:var(--faint);z-index:2}
+.lval{font-family:var(--mono);font-size:11.5px;text-align:right;font-variant-numeric:tabular-nums}
+
+/* alerts */
+.alert{border-radius:var(--r);padding:11px 13px;font-size:13px;line-height:1.5;margin:12px 0;border:1px solid}
+.a-warn{background:rgba(240,174,60,.075);border-color:var(--amber-d);color:#FBE0B0}
+.a-risk{background:rgba(242,101,126,.075);border-color:var(--rose-d);color:#FFCBD5}
+.a-info{background:rgba(95,216,238,.06);border-color:var(--lumen-d);color:#C3ECF5}
+.a-ok{background:rgba(111,199,156,.07);border-color:var(--sage-d);color:#C6EBD9}
+.alert b{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;display:block;margin-bottom:4px;opacity:.85}
+
+/* stat blocks */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.stat{background:var(--slate);padding:12px 13px}
+.stat .v{font-family:var(--mono);font-size:22px;font-variant-numeric:tabular-nums;line-height:1.1;color:var(--amber)}
+.stat .v.c{color:var(--lumen)} .stat .v.r{color:var(--rose)} .stat .v.g{color:var(--sage)}
+.stat .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);margin-top:4px}
+
+/* sliders */
+.field{margin-bottom:14px}
+.field label{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.field label span{color:var(--amber);font-size:13px;letter-spacing:0;text-transform:none;font-variant-numeric:tabular-nums}
+input[type=range]{-webkit-appearance:none;width:100%;height:22px;background:transparent;cursor:pointer;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--line);border-radius:2px}
+input[type=range]::-moz-range-track{height:3px;background:var(--line);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;
+  background:var(--amber);margin-top:-6px;box-shadow:0 0 0 3px rgba(240,174,60,.18)}
+input[type=range]::-moz-range-thumb{width:15px;height:15px;border:none;border-radius:50%;background:var(--amber)}
+input[type=text],input[type=password],select,textarea{
+  width:100%;background:var(--void);border:1px solid var(--line);color:var(--paper);
+  padding:9px 11px;border-radius:var(--r);font-family:var(--mono);font-size:13px
+}
+textarea{resize:vertical;line-height:1.5}
+
+/* population grid (icon array) */
+.popgrid{display:grid;grid-template-columns:repeat(40,1fr);gap:1.5px;margin:12px 0}
+.popgrid i{aspect-ratio:1;background:#1A2333;border-radius:1px}
+.popgrid i.tp{background:var(--rose)}
+.popgrid i.fp{background:var(--amber)}
+.popgrid i.fn{background:var(--violet)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.06em}
+.legend s{width:9px;height:9px;display:inline-block;border-radius:1px;margin-right:5px;text-decoration:none;vertical-align:-1px}
+
+/* canvas */
+.cwrap{background:#04070C;border:1px solid var(--line);border-radius:var(--r);padding:10px;display:flex;justify-content:center}
+canvas{max-width:100%;height:auto;display:block;image-rendering:pixelated;border-radius:2px}
+canvas.smooth{image-rendering:auto}
+.kernel{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-width:184px}
+.kernel input{text-align:center;padding:7px 2px;font-size:12.5px}
+
+/* table */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--faint);text-align:left;padding:8px 9px;border-bottom:1px solid var(--line);font-weight:400}
+.tbl td{padding:9px;border-bottom:1px solid rgba(40,55,79,.55);vertical-align:top;color:var(--paper2)}
+.tbl tr:last-child td{border-bottom:none}
+.scrollx{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+/* organ atlas */
+.organs{display:grid;grid-template-columns:repeat(auto-fill,minmax(126px,1fr));gap:8px}
+.organ{
+  background:var(--slate);border:1px solid var(--line);border-radius:var(--r);padding:12px 10px;
+  cursor:pointer;text-align:left;color:var(--paper2)
+}
+.organ:hover{border-color:var(--lumen-d);color:var(--paper)}
+.organ.on{border-color:var(--amber);background:rgba(240,174,60,.09);color:var(--amber)}
+.organ .gl{font-size:19px;line-height:1;margin-bottom:7px;display:block}
+.organ .nm{font-size:13px;font-weight:500;display:block}
+.organ .sub{font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;color:var(--faint);display:block;margin-top:3px}
+
+/* accordion / cards list */
+.acc{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:9px;background:var(--slate)}
+.acc > button{
+  width:100%;display:flex;gap:10px;align-items:center;background:none;border:none;color:var(--paper);
+  padding:13px 14px;cursor:pointer;text-align:left;font-size:14px;font-weight:500
+}
+.acc > button .ch{margin-left:auto;color:var(--faint);font-family:var(--mono);font-size:15px;transition:transform .2s}
+.acc.open > button .ch{transform:rotate(45deg)}
+.acc .body{display:none;padding:0 14px 15px;border-top:1px solid var(--line)}
+.acc.open .body{display:block;padding-top:13px}
+
+/* quiz */
+.qopt{
+  display:block;width:100%;text-align:left;background:var(--slate2);border:1px solid var(--line);
+  color:var(--paper2);padding:11px 13px;border-radius:var(--r);margin-bottom:7px;cursor:pointer;font-size:13.5px;line-height:1.4
+}
+.qopt:hover{border-color:var(--lumen-d)}
+.qopt.correct{border-color:var(--sage);background:rgba(111,199,156,.12);color:#CDEEDF}
+.qopt.wrong{border-color:var(--rose);background:rgba(242,101,126,.12);color:#FFD2DA}
+.qopt:disabled{cursor:default}
+
+/* progress */
+.prog{height:3px;background:var(--slate3);border-radius:2px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--amber);width:0;transition:width .4s ease}
+
+/* modal */
+.scrim{position:fixed;inset:0;background:rgba(4,7,12,.86);backdrop-filter:blur(5px);z-index:200;
+  display:none;align-items:center;justify-content:center;padding:18px}
+.scrim.on{display:flex}
+.modal{background:var(--slate);border:1px solid var(--line);border-radius:var(--r);max-width:560px;
+  width:100%;max-height:86vh;overflow-y:auto;box-shadow:0 24px 70px rgba(0,0,0,.65)}
+.modal .mh{padding:18px 20px 14px;border-bottom:1px solid var(--line)}
+.modal .mb{padding:18px 20px}
+.modal .mf{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+
+/* footer */
+footer{border-top:1px solid var(--line);margin-top:34px;padding:20px 16px 40px;text-align:center}
+footer .sig{font-family:var(--mono);font-size:11px;letter-spacing:.09em;color:var(--faint);line-height:1.9}
+footer .sig b{color:var(--paper2);font-weight:500}
+
+.spin{display:inline-block;width:11px;height:11px;border:2px solid var(--line);border-top-color:var(--amber);
+  border-radius:50%;animation:sp .7s linear infinite;vertical-align:-1px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.aiout{background:var(--void);border:1px solid var(--line);border-left:2px solid var(--violet);
+  border-radius:var(--r);padding:13px 15px;font-size:13.5px;line-height:1.6;white-space:pre-wrap;color:var(--paper2);margin-top:12px}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<header>
+  <div class="hbar">
+    <div class="mark">
+      <b>NIDĀNA</b>
+      <span class="dev">Ep 13 · Advanced</span>
+    </div>
+    <div class="hspace"></div>
+    <span class="pill" id="netPill"><i class="dot" id="netDot"></i><span id="netTxt">Online</span></span>
+    <button class="iconbtn" id="btnKey" title="Bring your own Anthropic key">AI ⚙</button>
+  </div>
+</header>
+<div class="safety">Teaching tool · not a diagnostic device · never use it on a real person, including yourself</div>
+
+<div class="shell">
+  <nav class="rail" id="rail"></nav>
+  <div style="flex:1;min-width:0">
+    <div class="tabs" id="tabs"></div>
+    <main>
+
+<!-- ========== 0 · ORIENT ========== -->
+<section class="panel on" id="p-orient">
+  <div class="phead">
+    <div class="eyebrow">AI Education Series · Episode 13</div>
+    <h2>How a machine reasons about disease — and where the reasoning breaks</h2>
+    <p class="lede">Diagnosis is not pattern matching. It is belief revision under uncertainty, in a specific population, with asymmetric costs of being wrong. This episode makes that arithmetic visible, then shows you exactly which parts of it current AI does well, does badly, and cannot do at all.</p>
+  </div>
+
+  <div class="card">
+    <h3>The one sentence this whole episode defends</h3>
+    <p class="stem" style="font-size:18px">A test result does not tell you what a patient has. It tells you <em>how much to change your mind</em> about what they might have.</p>
+    <p class="small" style="margin-top:12px">Everything downstream — why a 99%-accurate model can be wrong 95% of the time, why an imaging model collapses at a new hospital, why a fluent language model invents a drug dose with total confidence — falls out of that sentence.</p>
+  </div>
+
+  <div class="grid g3">
+    <div class="card tight"><div class="eyebrow">Part one</div><h3 style="margin:6px 0 6px">The arithmetic</h3><p class="small">Base rates, likelihood ratios, log-odds. A live sandbox where the same findings give different answers in a Hyderabad district clinic and a metro emergency department.</p></div>
+    <div class="card tight"><div class="eyebrow">Part two</div><h3 style="margin:6px 0 6px">The eye</h3><p class="small">What a convolutional model actually measures in a radiograph, drawn pixel by pixel — and the shortcut that makes a 0.97 model score 0.79 across town.</p></div>
+    <div class="card tight"><div class="eyebrow">Part three</div><h3 style="margin:6px 0 6px">The limits</h3><p class="small">Calibration, distribution shift, fabrication. Then the part no benchmark measures: examination, narrative, values, and accountability.</p></div>
+  </div>
+
+  <div class="card">
+    <h3>How to read this app <span class="tag t-mut">honest labelling</span></h3>
+    <p class="small">Every number you will see is tagged. There are exactly three kinds:</p>
+    <div class="scrollx"><table class="tbl">
+      <tr><th>Label</th><th>Means</th><th>Where it appears</th></tr>
+      <tr><td><span class="tag t-sim">Teaching value</span></td><td>A rounded, illustrative figure chosen so the mathematics is visible. Directionally faithful to the published literature; not a citable statistic.</td><td>All likelihood ratios, all priors, all case vignettes.</td></tr>
+      <tr><td><span class="tag t-real">Real, deployed</span></td><td>A system genuinely running on patients somewhere in the world, described from the public record.</td><td>Organ atlas, Horizon chapter.</td></tr>
+      <tr><td><span class="tag t-risk">Constructed failure</span></td><td>A failure mode written deliberately by the author to be spotted. Not a transcript of any real model.</td><td>Fabrication Lab.</td></tr>
+    </table></div>
+    <div class="alert a-info"><b>Offline by design</b>All reasoning here is deterministic arithmetic running on your device. No network, no account, no data leaving the phone. The optional "Second opinion" feature is the only thing that touches the internet, and it is clearly marked wherever it appears.</div>
+  </div>
+
+  <div class="card">
+    <h3>Your progress</h3>
+    <div class="prog" style="margin:10px 0 8px"><i id="progBar"></i></div>
+    <p class="tiny" id="progTxt">Nothing visited yet.</p>
+    <div class="btnrow" style="margin-top:12px">
+      <button class="btn primary" data-goto="p-prior">Start with base rates →</button>
+      <button class="btn" id="btnReset">Reset progress</button>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 1 · PRIOR ========== -->
+<section class="panel" id="p-prior">
+  <div class="phead">
+    <div class="eyebrow">Chapter one · Pūrva — what was true before the test</div>
+    <h2>A 99% accurate test is usually wrong</h2>
+    <p class="lede">This is the single most misread number in medical AI. Accuracy is a property of the test <em>and</em> the population together. Move the population, and the same test changes meaning entirely.</p>
+  </div>
+
+  <div class="card">
+    <h3>The screening machine</h3>
+    <p class="small">Ten thousand people are screened. Set how common the disease is, and how good the test is. The grid below is the whole population — one square per person, coloured by what actually happened to them.</p>
+
+    <div class="grid g3" style="margin-top:16px">
+      <div class="field">
+        <label>Prevalence <span id="vPrev">1 in 1,000</span></label>
+        <input type="range" id="sPrev" min="0" max="100" value="30">
+      </div>
+      <div class="field">
+        <label>Sensitivity <span id="vSens">99%</span></label>
+        <input type="range" id="sSens" min="50" max="100" step="0.5" value="99">
+      </div>
+      <div class="field">
+        <label>Specificity <span id="vSpec">99%</span></label>
+        <input type="range" id="sSpec" min="50" max="100" step="0.5" value="99">
+      </div>
+    </div>
+
+    <div class="stats" style="margin:6px 0 14px">
+      <div class="stat"><div class="v" id="oPPV">9%</div><div class="k">Positive result → truly ill</div></div>
+      <div class="stat"><div class="v c" id="oNPV">100%</div><div class="k">Negative result → truly well</div></div>
+      <div class="stat"><div class="v r" id="oFP">99</div><div class="k">False alarms</div></div>
+      <div class="stat"><div class="v g" id="oTP">10</div><div class="k">Correctly caught</div></div>
+    </div>
+
+    <div class="popgrid" id="popGrid" aria-hidden="true"></div>
+    <div class="legend">
+      <span><s style="background:var(--rose)"></s>Ill, caught</span>
+      <span><s style="background:var(--amber)"></s>Well, falsely alarmed</span>
+      <span><s style="background:var(--violet)"></s>Ill, missed</span>
+      <span><s style="background:#1A2333"></s>Well, correctly cleared</span>
+      <span class="tiny">1 square ≈ <b id="perSq">10</b> people</span>
+    </div>
+
+    <div class="alert a-warn" id="priorMsg"><b>Read this</b>—</div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>Worked example, by hand</h3>
+      <p class="small">Disease affects 1 in 1,000. Test is 99% sensitive, 99% specific. Screen 100,000 people:</p>
+      <div class="scrollx"><table class="tbl">
+        <tr><th></th><th>Has disease</th><th>Does not</th></tr>
+        <tr><td class="mono">Test +</td><td class="mono" style="color:var(--sage)">99</td><td class="mono" style="color:var(--amber)">999</td></tr>
+        <tr><td class="mono">Test −</td><td class="mono" style="color:var(--violet)">1</td><td class="mono">98,901</td></tr>
+        <tr><td class="mono">Total</td><td class="mono">100</td><td class="mono">99,900</td></tr>
+      </table></div>
+      <p class="small" style="margin-top:12px">Of the 1,098 people told "positive", only 99 are ill. <b style="color:var(--amber)">Nine percent.</b> The test did nothing wrong. There are simply 999 times more well people available to be wrongly flagged.</p>
+    </div>
+    <div class="card">
+      <h3>Why this ruins AI benchmark claims</h3>
+      <p class="small">A model reports 99% accuracy on a curated test set that was balanced 50/50 between sick and well — because balanced sets train better. Deploy it into a screening clinic where 0.1% are sick and nothing about the model changed, but its positive predictions went from mostly-right to mostly-wrong.</p>
+      <div class="alert a-risk" style="margin-top:12px"><b>The rule</b>Sensitivity and specificity travel with the model. Positive predictive value travels with the population. Any vendor quoting only the first pair is quoting the half that flatters them.</div>
+      <p class="small">This is also why the same model must be revalidated in every setting it moves to — a lesson the imaging chapter makes visual.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 2 · SANDBOX ========== -->
+<section class="panel" id="p-bayes">
+  <div class="phead">
+    <div class="eyebrow">Chapter two · Nidāna — the sandbox</div>
+    <h2>Differential diagnosis as belief revision</h2>
+    <p class="lede">Pick a case. Turn findings on. Watch the light box re-weight every hypothesis at once. Then change the setting — same patient, same findings, different part of the world — and watch the answer move.</p>
+  </div>
+
+  <div class="alert a-risk"><b>Before you touch anything</b>These are written teaching cases with fixed, rounded numbers. This tool cannot see a patient, cannot examine anyone, and must never be pointed at a real symptom. If someone near you has crushing chest pain, sudden breathlessness, one-sided weakness, or the worst headache of their life — stop reading and call emergency services.</div>
+
+  <div class="card">
+    <div class="eyebrow" style="margin-bottom:8px">Case</div>
+    <div class="seg" id="caseSeg" style="margin-bottom:14px"></div>
+    <p class="stem" id="caseStem"></p>
+    <div class="eyebrow" style="margin:16px 0 8px">Where you are seeing this patient</div>
+    <div class="seg" id="setSeg"></div>
+    <p class="tiny" id="setNote" style="margin-top:8px"></p>
+  </div>
+
+  <div class="grid g2">
+    <div>
+      <div class="card">
+        <h3>Findings <span class="tag t-sim">teaching values</span></h3>
+        <p class="tiny" style="margin-bottom:12px">Only switch on what you would actually have. Each finding carries a likelihood ratio for every hypothesis.</p>
+        <div id="findList"></div>
+        <div class="btnrow" style="margin-top:6px">
+          <button class="btn" id="btnClearF">Clear findings</button>
+          <button class="btn" id="btnRandomF">Give me a case</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="padding:0;background:none;border:none;box-shadow:none">
+        <div class="lightbox" id="lightbox">
+          <div class="lbhead">
+            <div>
+              <div class="eyebrow">Posterior probability</div>
+              <div class="tiny" id="lbSub">No findings — these are the base rates.</div>
+            </div>
+            <span class="tag t-info" id="lbCount">0 findings</span>
+          </div>
+          <div id="hypList"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>What to do next</h3>
+        <div class="seg" style="margin-bottom:12px" id="rankSeg">
+          <button data-rank="prob" class="on amber">Most likely</button>
+          <button data-rank="harm">Most dangerous</button>
+        </div>
+        <div id="actionOut"></div>
+      </div>
+
+      <div class="card">
+        <h3>The ladder <span class="tag t-mut" id="ladderFor"></span></h3>
+        <p class="tiny" style="margin-bottom:10px">Every finding multiplies the odds. Bars point right when the finding argues for this diagnosis, left when it argues against. Length is log₁₀ of the likelihood ratio.</p>
+        <div id="ladder"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="indepWarn"></div>
+
+  <div class="card">
+    <h3>What this engine is, exactly <span class="tag t-sim">simulated</span></h3>
+    <p class="small">It is naive Bayes in log-odds space. Prior odds, times the likelihood ratio of every finding you switched on, normalised across hypotheses. Roughly forty lines of arithmetic — no model, no training, no network.</p>
+    <div class="scrollx"><table class="tbl">
+      <tr><th>It does this well</th><th>It gets this wrong</th></tr>
+      <tr><td>Shows that evidence is <em>multiplicative</em>, not additive.</td><td>Assumes findings are independent given the diagnosis. They rarely are.</td></tr>
+      <tr><td>Makes the base rate impossible to ignore.</td><td>Has a closed list of diagnoses. Real patients arrive undifferentiated.</td></tr>
+      <tr><td>Separates "likely" from "must not miss".</td><td>Treats a finding as present or absent. Severity, timing and trajectory carry most of the signal.</td></tr>
+      <tr><td>Is fully inspectable — you can see every multiplication.</td><td>Cannot tell you the finding you never thought to look for.</td></tr>
+    </table></div>
+    <div class="alert a-info" style="margin-top:14px"><b>Worth noticing</b>A modern clinical language model is far more fluent than this engine and far less inspectable. The arithmetic here is crude but auditable; the model's is sophisticated and hidden. Which failure would you rather explain to a family?</div>
+  </div>
+
+  <div class="card" id="aiCard2">
+    <h3>Second opinion <span class="tag t-real">real model · needs internet</span></h3>
+    <p class="small">Send the current case state to Claude and ask it to critique the reasoning — what the naive engine is over-counting, what a clinician would ask next, what is missing from the finding list entirely.</p>
+    <div class="btnrow" style="margin-top:10px">
+      <button class="btn primary" id="btnSecond">Request critique</button>
+      <span class="tiny" id="secondHint">Add your Anthropic key from the header to enable.</span>
+    </div>
+    <div id="secondOut"></div>
+  </div>
+</section>
+<!-- ========== 3 · IMAGING ========== -->
+<section class="panel" id="p-imaging">
+  <div class="phead">
+    <div class="eyebrow">Chapter three · Dṛś — what the machine sees</div>
+    <h2>Medical imaging AI, drawn pixel by pixel</h2>
+    <p class="lede">A radiology model does not "look at a chest". It multiplies small grids of numbers across the image, millions of times, and learns which combinations predict the label it was given. Everything good and everything catastrophic about imaging AI follows from that.</p>
+  </div>
+
+  <div class="card">
+    <h3>Step one · a convolution is a sliding weighted average</h3>
+    <p class="small">Below is a synthetic radiograph drawn by this app — thorax, ribs, heart shadow, diaphragm, one small nodule in the right upper zone, and a metal side-marker in the corner. Nothing here came from a patient. Choose a 3×3 kernel and watch what survives.</p>
+
+    <div class="grid g2" style="margin-top:16px;align-items:start">
+      <div>
+        <div class="seg" id="kernelSeg" style="margin-bottom:12px"></div>
+        <div class="kernel" id="kernelGrid" style="margin-bottom:10px"></div>
+        <p class="tiny">Edit any cell. The kernel is applied to every pixel: multiply the nine neighbours by these nine weights, add them up, that is the new pixel. A trained network learns thousands of these, stacked.</p>
+        <label class="chk" id="chkMarker" style="margin-top:10px"><span class="box">✓</span><span class="lbl">Show the side-marker and hospital burn-in</span></label>
+      </div>
+      <div>
+        <div class="cwrap"><canvas id="cvXray" width="256" height="256" style="width:100%;max-width:300px"></canvas></div>
+        <p class="tiny" style="text-align:center;margin-top:8px" id="kernelCaption">Original — no filter applied.</p>
+      </div>
+    </div>
+
+    <div class="alert a-info"><b>The idea in one line</b>Early layers find edges. Middle layers combine edges into textures and shapes. Late layers combine shapes into "this looks like the thing the label said". At no point does the model know what a lung is.</div>
+  </div>
+
+  <div class="card">
+    <h3>Step two · where the model looked <span class="tag t-sim">simulated saliency</span></h3>
+    <p class="small">A saliency map heats up the pixels that most changed the model's answer. Two models below score identically on the in-house test set. Only one is looking at the patient.</p>
+    <div class="seg" id="salSeg" style="margin:12px 0">
+      <button data-sal="lesion" class="on amber">Model A</button>
+      <button data-sal="shortcut">Model B</button>
+      <button data-sal="off">No overlay</button>
+    </div>
+    <div class="grid g2" style="align-items:start">
+      <div class="cwrap"><canvas id="cvSal" width="256" height="256" style="width:100%;max-width:300px"></canvas></div>
+      <div id="salText"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Step three · the shortcut, documented</h3>
+    <p class="small">These are real, published failure patterns. Not hypotheticals.</p>
+    <div class="scrollx"><table class="tbl">
+      <tr><th>What the model was meant to learn</th><th>What it actually latched onto</th><th>How it showed up</th></tr>
+      <tr><td>Pneumothorax on chest radiographs</td><td>The chest drain already inserted to treat it</td><td>Excellent on retrospective data, useless before treatment — the moment it would have been useful.</td></tr>
+      <tr><td>Melanoma from skin photographs</td><td>Surgical skin markings and the ruler placed beside lesions clinicians were already worried about</td><td>Performance collapsed on unmarked images.</td></tr>
+      <tr><td>COVID-19 from chest X-rays, 2020 wave</td><td>Scanner make, patient position, and which dataset the image came from — sick images came from one hospital, well images from another</td><td>Dozens of published models; almost none survived external validation.</td></tr>
+      <tr><td>Hip fracture on pelvic films</td><td>The scanner model, which correlated with which hospital, which correlated with case mix</td><td>Accuracy fell sharply on a new site's equipment.</td></tr>
+      <tr><td>Deterioration / sepsis from the record</td><td>Whether a clinician had already ordered worried-looking tests</td><td>The model predicted clinician concern, not physiology. Alerts arrived after the humans had already acted.</td></tr>
+    </table></div>
+    <div class="alert a-warn"><b>Why this keeps happening</b>The model is not rewarded for being right for the right reason. It is rewarded for being right. Any pixel that correlates with the label is fair game — including pixels that only exist because a human already made the diagnosis.</div>
+  </div>
+
+  <div class="card">
+    <h3>Step four · picking the operating point</h3>
+    <p class="small">A model outputs a score, not a decision. You choose the threshold — and that choice is a value judgement about which error you would rather make. Drag it.</p>
+    <div class="grid g2" style="align-items:start;margin-top:14px">
+      <div>
+        <div class="cwrap"><canvas id="cvRoc" class="smooth" width="380" height="220" style="width:100%"></canvas></div>
+        <div class="field" style="margin-top:14px">
+          <label>Decision threshold <span id="vThr">0.50</span></label>
+          <input type="range" id="sThr" min="1" max="99" value="50">
+        </div>
+        <div class="field">
+          <label>Disease prevalence here <span id="vRPrev">5%</span></label>
+          <input type="range" id="sRPrev" min="1" max="600" value="220">
+        </div>
+        <div class="field">
+          <label>Model separation quality <span id="vSep">Good</span></label>
+          <input type="range" id="sSep" min="20" max="95" value="62">
+        </div>
+      </div>
+      <div>
+        <div class="stats" style="margin-bottom:14px">
+          <div class="stat"><div class="v g" id="rSens">—</div><div class="k">Sensitivity</div></div>
+          <div class="stat"><div class="v c" id="rSpec">—</div><div class="k">Specificity</div></div>
+          <div class="stat"><div class="v" id="rPPV">—</div><div class="k">If positive, ill</div></div>
+          <div class="stat"><div class="v r" id="rMiss">—</div><div class="k">Missed per 1,000 ill</div></div>
+        </div>
+        <div id="rocMsg"></div>
+        <p class="small" style="margin-top:12px">Notice that the two distribution curves never move when you drag the threshold. The model is unchanged. Only your tolerance for each kind of error changed — and that tolerance belongs to a clinical service, a regulator and a patient, not to a data scientist.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 4 · UNCERTAINTY ========== -->
+<section class="panel" id="p-uncertain">
+  <div class="phead">
+    <div class="eyebrow">Chapter four · Sandeha — confidence without knowledge</div>
+    <h2>Calibration, drift, and fabrication</h2>
+    <p class="lede">The dangerous model is not the one that is wrong. It is the one that is wrong and sounds exactly as certain as when it is right.</p>
+  </div>
+
+  <div class="card">
+    <h3>Calibration · does 90% mean 90%?</h3>
+    <p class="small">A calibrated model that says "80% chance" is right about eighty times in a hundred. Most raw neural networks are systematically overconfident. The dashed diagonal is perfect calibration; the curve is the model.</p>
+    <div class="grid g2" style="align-items:start;margin-top:14px">
+      <div class="cwrap"><canvas id="cvCal" class="smooth" width="340" height="280" style="width:100%"></canvas></div>
+      <div>
+        <div class="field">
+          <label>Temperature scaling <span id="vTemp">1.00</span></label>
+          <input type="range" id="sTemp" min="50" max="320" value="60">
+        </div>
+        <div class="stats" style="margin-bottom:12px">
+          <div class="stat"><div class="v r" id="oECE">—</div><div class="k">Calibration error</div></div>
+          <div class="stat"><div class="v c" id="oVerdict">—</div><div class="k">Behaviour</div></div>
+        </div>
+        <p class="small">Temperature scaling divides the model's raw scores by one number before the final softmax. It changes no prediction's <em>rank</em> — accuracy is untouched — but it makes the stated confidence honest. It is one of the cheapest and least-used safety measures in deployed clinical AI.</p>
+        <div class="alert a-warn" id="calMsg"><b>Now</b>—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Distribution shift · the model does not know it is lost</h3>
+    <p class="small">A classifier assigns probabilities across the classes it was taught. Show it something outside that set and it does not return "unknown" — it returns a confident answer from the wrong menu.</p>
+    <div class="seg" id="oodSeg" style="margin:12px 0">
+      <button data-ood="0" class="on amber">Same hospital</button>
+      <button data-ood="1">New scanner</button>
+      <button data-ood="2">Paediatric film</button>
+      <button data-ood="3">Photo of a screen</button>
+    </div>
+    <div id="oodOut"></div>
+  </div>
+
+  <div class="card">
+    <h3>Fabrication Lab <span class="tag t-risk">constructed examples</span></h3>
+    <p class="small">Six outputs in the register of a confident clinical assistant. Some are sound. Some contain a specific failure that has caused real harm. Mark each one, then reveal.</p>
+    <p class="tiny" style="margin-bottom:14px">Written by the author to be diagnosable. None is a transcript of a real model, and none should be used as clinical information either way.</p>
+    <div id="hallList"></div>
+    <div class="btnrow" style="margin-top:12px">
+      <button class="btn primary" id="btnHallReveal">Reveal all</button>
+      <button class="btn" id="btnHallReset">Reset</button>
+      <span class="tiny" id="hallScore"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Why fluency is not evidence</h3>
+    <div class="grid g2">
+      <div>
+        <p class="small">A language model is trained to produce text that a knowledgeable person would plausibly have written. A correct citation and an invented one are equally plausible <em>as text</em>. The model has no separate channel that says "I retrieved this" versus "I generated this" — and the generated one is often more fluent, because it was shaped to fit the sentence rather than to fit the world.</p>
+        <p class="small">In clinical use the fabrications cluster in exactly the places verification is hardest: reference ranges, dosing in unusual populations, guideline version numbers, trial names, and the confident answer to a question containing a false premise.</p>
+      </div>
+      <div>
+        <div class="alert a-risk"><b>The false-premise trap</b>Ask about a syndrome that does not exist and a fluent model will frequently describe it — mechanism, presentation, management — because the question presupposed it. Clinicians embed false premises constantly and without meaning to: "her rash is definitely drug-related, which antibiotic…"</div>
+        <div class="alert a-ok"><b>What actually helps</b>Retrieval with visible sources · refusing outside a defined scope · showing a probability distribution rather than a single answer · a second model checking the first · and a human who is accountable and expected to disagree.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 5 · HUMAN ========== -->
+<section class="panel" id="p-human">
+  <div class="phead">
+    <div class="eyebrow">Chapter five · Manuṣya — the part with no dataset</div>
+    <h2>Why AI cannot replace your doctor</h2>
+    <p class="lede">Not because it is not clever enough. Because most of what a consultation does never becomes data in the first place — and because someone has to be answerable when it goes wrong.</p>
+  </div>
+
+  <div class="alert a-info"><b>Read this chapter carefully</b>The argument is not "AI is bad at medicine". Several systems in the next chapters are genuinely better than the average human at their narrow task. The argument is that the narrow task is a small slice of the job, and the slice that is left is the slice that decides outcomes.</div>
+
+  <div id="humanList"></div>
+
+  <div class="card">
+    <h3>The same encounter, two ways of seeing it</h3>
+    <p class="small">One patient. Toggle between the record a model receives and the room a clinician is standing in.</p>
+    <div class="seg" id="seeSeg" style="margin:12px 0">
+      <button data-see="model" class="on amber">What the model receives</button>
+      <button data-see="human">What the clinician receives</button>
+    </div>
+    <div id="seeOut"></div>
+  </div>
+
+  <div class="card">
+    <h3>Where the responsibility actually sits</h3>
+    <div class="scrollx"><table class="tbl">
+      <tr><th>Question</th><th>A model</th><th>A clinician</th></tr>
+      <tr><td>Can it be wrong?</td><td>Yes</td><td>Yes</td></tr>
+      <tr><td>Can it know it is out of its depth?</td><td>Only if someone built that boundary in — and it will not notice a boundary nobody anticipated</td><td>Trained explicitly to escalate, and answerable for failing to</td></tr>
+      <tr><td>Can it be examined about its reasoning afterwards?</td><td>Post-hoc explanations are reconstructions, not the actual computation</td><td>Yes, under oath if necessary</td></tr>
+      <tr><td>Can it hold a licence, be suspended, be sued?</td><td>No. Liability lands on the deployer, the manufacturer, or the clinician who accepted the output</td><td>Yes</td></tr>
+      <tr><td>Can it negotiate what matters to this patient?</td><td>It can generate options; it cannot be trusted with the trade-off</td><td>This is the actual job</td></tr>
+    </table></div>
+    <div class="alert a-warn" style="margin-top:14px"><b>Automation bias, the quiet risk</b>The most reliable finding in decision-support research is that people follow confident machines — including when the machine is wrong, and including experts who were told the machine is sometimes wrong. A tool that is right 95% of the time can still reduce total accuracy, if it makes clinicians stop checking the other 5%.</div>
+  </div>
+
+  <div class="card">
+    <h3>The honest formulation</h3>
+    <p class="stem" style="font-size:17px">AI will not replace your doctor. It will replace a set of tasks your doctor currently does badly, slowly, or not at all — and the doctors who use it well will do things the ones who don't cannot.<br><br>The failure mode to guard against is not the machine taking over. It is the machine being trusted in exactly the cases where it should not have been, by someone with no time to check.</p>
+  </div>
+</section>
+<!-- ========== 6 · ORGAN ATLAS ========== -->
+<section class="panel" id="p-atlas">
+  <div class="phead">
+    <div class="eyebrow">Chapter six · Aṅga — organ by organ</div>
+    <h2>Where clinical AI actually works today</h2>
+    <p class="lede">A tour of the body, not as anatomy, but as twelve very different <em>reasoning problems</em>. Each organ tells you why some of them fell to machine learning a decade ago and others have not moved at all.</p>
+  </div>
+
+  <div class="alert a-risk"><b>Educational reference only</b>The presentations and tests below are here to explain why each organ is an easy or hard target for AI. They are not a symptom checker, not a diagnostic pathway, and deliberately contain no doses, no thresholds for treatment, and no advice. Anything that worries you belongs in front of a qualified clinician, not an app.</div>
+
+  <div class="card">
+    <div class="organs" id="organGrid"></div>
+  </div>
+  <div id="organDetail"></div>
+
+  <div class="card">
+    <h3>The pattern across all twelve</h3>
+    <div class="scrollx"><table class="tbl">
+      <tr><th>AI does well when…</th><th>AI struggles when…</th></tr>
+      <tr><td>The input is a single standardised image or signal</td><td>The input is a person's story over months</td></tr>
+      <tr><td>The label is objective and verifiable later (biopsy, angiogram, culture)</td><td>The label is a clinician's opinion, so the model learns the opinion</td></tr>
+      <tr><td>Millions of labelled examples exist</td><td>The condition is rare — which is exactly when help is most wanted</td></tr>
+      <tr><td>The task is triage: find the ones worth looking at first</td><td>The task is deciding whether to treat at all</td></tr>
+      <tr><td>An expert is scarce and the alternative is no assessment</td><td>An expert is present and the model only adds a second opinion nobody has time to adjudicate</td></tr>
+    </table></div>
+    <div class="alert a-ok" style="margin-top:14px"><b>The strongest case for clinical AI is not accuracy</b>It is access. A model that is merely as good as an average reader is transformative in a district where there is no reader at all, and marginal in a tertiary centre with twelve of them. The eye and the chest are the two clearest demonstrations of this in the world right now.</div>
+  </div>
+</section>
+
+<!-- ========== 7 · HORIZON ========== -->
+<section class="panel" id="p-future">
+  <div class="phead">
+    <div class="eyebrow">Chapter seven · Bhaviṣya — the horizon</div>
+    <h2>What AI will plausibly do to healthcare</h2>
+    <p class="lede">Sorted by how much evidence exists, not by how exciting it sounds. Four bands: running on patients now, in trials, in the lab, and speculation.</p>
+  </div>
+
+  <div class="seg" id="horizonSeg" style="margin-bottom:18px">
+    <button data-h="all" class="on amber">Everything</button>
+    <button data-h="now">Deployed</button>
+    <button data-h="trial">In trials</button>
+    <button data-h="lab">Research</button>
+    <button data-h="spec">Speculative</button>
+  </div>
+  <div id="horizonList"></div>
+
+  <div class="card">
+    <h3>The three things that decide whether any of it helps</h3>
+    <div class="grid g3" style="margin-top:12px">
+      <div>
+        <div class="eyebrow" style="color:var(--amber)">Evaluation</div>
+        <p class="small" style="margin-top:6px">Almost all published clinical AI is validated retrospectively on data resembling its training set. The number that matters — did patients do better in a prospective trial — exists for a small handful of systems. Diagnostic accuracy is not a health outcome.</p>
+      </div>
+      <div>
+        <div class="eyebrow" style="color:var(--lumen)">Workflow</div>
+        <p class="small" style="margin-top:6px">Systems fail on integration far more often than on accuracy. An alert that arrives after the decision, in a system nobody has open, addressed to a role that does not exist on nights, is a correct prediction and a clinical nullity.</p>
+      </div>
+      <div>
+        <div class="eyebrow" style="color:var(--rose)">Equity</div>
+        <p class="small" style="margin-top:6px">Models inherit whoever was in the training data. Skin tone, body habitus, gender, language, and cost-of-care proxies have all produced documented disparities. A model trained where care was rationed learns the rationing as if it were biology.</p>
+      </div>
+    </div>
+    <div class="alert a-info" style="margin-top:16px"><b>Governance, briefly</b>Clinical AI is regulated as a medical device in most jurisdictions — meaning it needs evidence, post-market surveillance, and a named responsible party. Continuously-learning models sit awkwardly here, because the thing that was approved is not the thing running next month. The unresolved questions are the same everywhere: who validates locally, who monitors drift, and who is liable when a clinician follows a correct-looking wrong answer.</div>
+  </div>
+
+  <div class="card">
+    <h3>A realistic ten-year picture</h3>
+    <p class="stem" style="font-size:16px">Documentation is largely automated and clinicians look at patients again. Imaging models triage the queue everywhere and read independently in a few narrow, heavily-audited tasks. Screening for eye, chest and cervix reaches populations that had none. Most consultations still begin with a person asking why you came in — because that question, and what you decide to do about the answer, was never the part that was scarce.</p>
+  </div>
+</section>
+
+<!-- ========== 8 · CHECK ========== -->
+<section class="panel" id="p-quiz">
+  <div class="phead">
+    <div class="eyebrow">Chapter eight · Parīkṣā — check yourself</div>
+    <h2>Ten questions</h2>
+    <p class="lede">Every one is answerable from something in this episode. Explanations appear as you go.</p>
+  </div>
+  <div id="quizList"></div>
+  <div class="card">
+    <div class="btnrow">
+      <button class="btn" id="btnQuizReset">Start again</button>
+      <span class="tiny" id="quizScore"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Take this with you</h3>
+    <p class="small">Five questions to ask about any clinical AI system anyone tries to sell, deploy, or publish:</p>
+    <ol class="small" style="padding-left:20px;line-height:1.75">
+      <li>What was the <b>prevalence</b> in the validation set, and what is it where you intend to use it?</li>
+      <li>Was it validated <b>prospectively, externally</b>, at a site that did not build it?</li>
+      <li>What does it do when the input is <b>outside</b> what it was trained on — and how do you find out that happened?</li>
+      <li>What is the <b>error you are choosing</b> at this operating point, and who agreed to that trade?</li>
+      <li>When it is confidently wrong, <b>who is accountable</b>, and how would anyone notice?</li>
+    </ol>
+    <div class="alert a-ok" style="margin-top:14px"><b>If you only remember one thing</b>Probability before the test decides what the test means. Everything else in medical AI is an elaboration of that.</div>
+  </div>
+</section>
+
+    </main>
+    <footer>
+      <div class="sig">
+        <b>NIDĀNA</b> · Episode 13 of the AI Education Series<br>
+        Designed &amp; Architected by <b>Krishnamurthy Kandregula</b> · Made by <b>Claude</b><br>
+        <span style="color:var(--rose)">Educational only. Not medical advice, not a diagnostic device.</span>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<!-- ===== modals ===== -->
+<div class="scrim" id="scrimKey">
+  <div class="modal">
+    <div class="mh">
+      <h3>Optional AI layer <span class="tag t-real">bring your own key</span></h3>
+      <p class="tiny" style="margin-top:6px">Everything in this episode works without this. The key is stored only in this browser's local storage, is sent only to Anthropic, and never reaches any server of mine.</p>
+    </div>
+    <div class="mb">
+      <div class="field">
+        <label>Anthropic API key</label>
+        <input type="password" id="inKey" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+      </div>
+      <div class="field">
+        <label>Model</label>
+        <select id="inModel">
+          <option value="claude-sonnet-4-6">claude-sonnet-4-6 — better critique</option>
+          <option value="claude-haiku-4-5">claude-haiku-4-5 — faster, cheaper</option>
+        </select>
+      </div>
+      <div class="alert a-warn"><b>Scope lock</b>The request carries a system instruction that keeps the model in teaching mode: it will discuss the constructed case and the reasoning, and will refuse personal medical questions. That is a guardrail, not a guarantee — treat anything it says as material for a lesson, not for a patient.</div>
+    </div>
+    <div class="mf">
+      <button class="btn" id="btnKeyClear">Remove key</button>
+      <button class="btn primary" id="btnKeySave">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="scrimStart">
+  <div class="modal">
+    <div class="mh"><h3>Before you begin</h3></div>
+    <div class="mb">
+      <p class="small">NIDĀNA is a teaching tool about how artificial intelligence reasons under uncertainty. It uses medicine because medicine is where uncertainty has consequences.</p>
+      <div class="alert a-risk"><b>It is not a medical device</b>It cannot see you, cannot examine anyone, and produces no advice. Every probability inside is a rounded teaching value in a written case. Do not use it on yourself or anyone else.</div>
+      <div class="alert a-warn"><b>If something is wrong right now</b>Chest pain, difficulty breathing, sudden weakness or numbness, confusion, the worst headache of your life, or thoughts of harming yourself — contact emergency services or a doctor immediately. Do not spend time in an app.</div>
+      <p class="tiny">Works fully offline. No account, no tracking, nothing leaves the device unless you deliberately add an API key.</p>
+    </div>
+    <div class="mf"><button class="btn primary" id="btnStartOk">I understand — this is a teaching tool</button></div>
+  </div>
+</div>
+<script>
+"use strict";
+
+/* =========================================================
+   NIDĀNA — Episode 13, AI Education Series
+   Deterministic engine. No network required.
+   ========================================================= */
+
+const LS = {
+  get(k, d){ try{ const v = localStorage.getItem("nidana:"+k); return v===null?d:JSON.parse(v);}catch(e){return d;} },
+  set(k, v){ try{ localStorage.setItem("nidana:"+k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem("nidana:"+k); }catch(e){} }
+};
+const $  = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const clamp = (v,a,b)=> Math.max(a, Math.min(b, v));
+const pct = p => (p*100 < 0.1 && p>0) ? "<0.1%" : (p*100).toFixed(p*100<10?1:0)+"%";
+
+/* ---------------------------------------------------------
+   CHAPTERS
+   --------------------------------------------------------- */
+const CHAPTERS = [
+  {id:"p-orient",    k:"—", t:"Orientation",      s:"Ārambha"},
+  {id:"p-prior",     k:"1", t:"Base rates",       s:"Pūrva"},
+  {id:"p-bayes",     k:"2", t:"The sandbox",      s:"Nidāna"},
+  {id:"p-imaging",   k:"3", t:"Imaging",          s:"Dṛś"},
+  {id:"p-uncertain", k:"4", t:"Uncertainty",      s:"Sandeha"},
+  {id:"p-human",     k:"5", t:"The human part",   s:"Manuṣya"},
+  {id:"p-atlas",     k:"6", t:"Organ atlas",      s:"Aṅga"},
+  {id:"p-future",    k:"7", t:"The horizon",      s:"Bhaviṣya"},
+  {id:"p-quiz",      k:"8", t:"Check yourself",   s:"Parīkṣā"}
+];
+
+/* ---------------------------------------------------------
+   VIGNETTES — all likelihood ratios are rounded TEACHING
+   values, directionally faithful to the clinical literature.
+   Not citable statistics. Never for use on a person.
+   --------------------------------------------------------- */
+const VIGNETTES = [
+{
+  id:"chest", label:"Chest pain",
+  stem:"A 58-year-old man arrives holding his sternum. The pain began two hours ago while he was walking up the stairs at home. He is a smoker with type 2 diabetes. He looks unwell and says, <em>“it feels heavy, like something is sitting on me.”</em>",
+  settings:{
+    ed:      {name:"Metro emergency dept", note:"Ambulances pre-select. The sickest people in the city arrive here, so the prior for dangerous causes is already high before anyone speaks.", prior:{acs:.18, pe:.05, dis:.010, per:.04, non:.72}},
+    clinic:  {name:"Urban GP clinic",      note:"Most chest pain that walks into a clinic is musculoskeletal, reflux or anxiety. Same complaint, one-quarter the prior for a heart attack.", prior:{acs:.045, pe:.012, dis:.002, per:.011, non:.93}},
+    rural:   {name:"Rural clinic, no ECG", note:"Prior sits between the two — but the crucial change is that half the findings below are simply unavailable. Reasoning does not stop; it runs on less.", prior:{acs:.10, pe:.02, dis:.005, per:.02, non:.855}}
+  },
+  hyps:[
+    {id:"acs", name:"Acute coronary syndrome", note:"heart muscle starved of blood", harm:5},
+    {id:"pe",  name:"Pulmonary embolism",      note:"clot in the lung circulation",  harm:5},
+    {id:"dis", name:"Aortic dissection",       note:"tear in the main artery",       harm:5},
+    {id:"per", name:"Pericarditis",            note:"inflamed lining of the heart",  harm:2},
+    {id:"non", name:"Non-cardiac chest pain",  note:"muscle, reflux, anxiety",       harm:1}
+  ],
+  groups:[
+    {name:"The story", ids:["exert","radiate","tear","antacid","travel","risk"]},
+    {name:"Examination", ids:["palp","pleur","diaph","bpdiff","hypox","tachy","rub"]},
+    {name:"Tests", ids:["stelev","diffst","trop","legswell"]}
+  ],
+  finds:[
+    {id:"exert",  g:"story", label:"Brought on by exertion, eases with rest", lr:{acs:2.4, non:0.7}},
+    {id:"radiate",label:"Pain radiates to both arms", lr:{acs:2.6, non:0.8}},
+    {id:"tear",   label:"Sudden tearing pain moving through to the back", lr:{dis:10, acs:0.8, non:0.4}},
+    {id:"antacid",label:"Burning pain, clearly relieved by an antacid", lr:{non:2.5, acs:0.6}},
+    {id:"travel", label:"Long flight and three days immobile last week", lr:{pe:2.2, non:0.9}},
+    {id:"risk",   label:"Smoker, diabetic, aged 58", lr:{acs:1.8, non:0.7}},
+    {id:"palp",   label:"Chest wall is tender exactly where the pain is", lr:{acs:0.3, non:3.5, pe:0.8}},
+    {id:"pleur",  label:"Sharp, definitely worse on deep breath", lr:{acs:0.4, pe:1.8, per:3.0, non:1.2}},
+    {id:"diaph",  label:"Sweating heavily, grey, feels sick", lr:{acs:2.0, dis:1.5, non:0.5}},
+    {id:"bpdiff", label:"Blood pressure differs by 25 mmHg between arms", lr:{dis:5.7, acs:0.9, non:0.8}},
+    {id:"hypox",  label:"Oxygen saturation 91% on room air", lr:{pe:2.8, acs:1.2, non:0.5}},
+    {id:"tachy",  label:"Heart rate 112, regular", lr:{pe:1.8, acs:1.2, non:0.8}},
+    {id:"rub",    label:"Scratchy rub heard over the heart", lr:{per:12, acs:0.5, non:0.4}},
+    {id:"stelev", label:"ECG: ST elevation in leads II, III, aVF", lr:{acs:22, non:0.15, per:0.5}, rural:false},
+    {id:"diffst", label:"ECG: widespread ST elevation with PR depression", lr:{per:15, acs:0.4, non:0.3}, rural:false, excl:["stelev"]},
+    {id:"trop",   label:"High-sensitivity troponin rising on repeat", lr:{acs:8, pe:2.0, per:2.0, non:0.15}, rural:false},
+    {id:"legswell",label:"One calf swollen and tender", lr:{pe:2.6, non:0.9}}
+  ],
+  corr:[["travel","legswell"],["tear","bpdiff"],["stelev","trop"],["hypox","tachy"]]
+},
+{
+  id:"cough", label:"Cough & fever",
+  stem:"A 34-year-old woman has been coughing for some time and now has a fever. She works long shifts, lives in a crowded household, and says she has been <em>“just tired, more than usual.”</em> She has not lost her appetite.",
+  settings:{
+    clinic:  {name:"Urban clinic",           note:"Ordinary viral illness dominates. Almost everything you find will be a viral cough until proven otherwise.", prior:{vir:.55, cap:.06, tb:.03, flu:.20, oth:.16}},
+    ed:      {name:"Emergency department",   note:"Self-selection again: people who come to an ED with a cough are sicker, so pneumonia climbs sharply.", prior:{vir:.25, cap:.25, tb:.06, flu:.28, oth:.16}},
+    rural:   {name:"High TB-burden district",note:"This is the single most important demonstration in the app. Nothing about the patient changed. The prior for tuberculosis went up sixfold because of where she is standing — and a model trained where TB is rare will not do this.", prior:{vir:.40, cap:.10, tb:.18, flu:.16, oth:.16}}
+  },
+  hyps:[
+    {id:"vir", name:"Viral cough / bronchitis", note:"self-limiting", harm:1},
+    {id:"cap", name:"Bacterial pneumonia",      note:"needs antibiotics, sometimes admission", harm:4},
+    {id:"tb",  name:"Tuberculosis",             note:"infectious, treatable, often late-diagnosed", harm:5},
+    {id:"flu", name:"Influenza / COVID-19",     note:"viral, occasionally severe", harm:2},
+    {id:"oth", name:"Post-nasal drip / reflux", note:"not an infection at all", harm:1}
+  ],
+  groups:[
+    {name:"The story", ids:["dur3wk","sweats","wtloss","contact","sick","postnasal"]},
+    {name:"Examination", ids:["crack","egoph","rr28","spo2","fever39","sputum","hemo"]},
+    {name:"Tests", ids:["cxrnorm","upperlobe"]}
+  ],
+  finds:[
+    {id:"dur3wk",  label:"Cough has lasted more than three weeks", lr:{tb:6.0, vir:0.2, cap:0.6, flu:0.2, oth:2.5}},
+    {id:"sweats",  label:"Drenching night sweats, changes the sheets", lr:{tb:4.5, vir:0.4, oth:0.4}},
+    {id:"wtloss",  label:"Six kilograms lost over two months", lr:{tb:5.0, vir:0.3, cap:0.8, oth:0.4}},
+    {id:"contact", label:"Household member treated for TB last year", lr:{tb:8.0, vir:0.9}},
+    {id:"sick",    label:"Several people at work have the same thing", lr:{flu:2.5, vir:2.0, tb:0.7, cap:0.9}},
+    {id:"postnasal",label:"Constant throat clearing, worse lying flat", lr:{oth:4.0, cap:0.5, tb:0.6}},
+    {id:"crack",   label:"Crackles over one lung base", lr:{cap:3.5, tb:2.0, vir:0.5, oth:0.3}},
+    {id:"egoph",   label:"Bronchial breathing with egophony", lr:{cap:4.0, vir:0.3, oth:0.2}},
+    {id:"rr28",    label:"Respiratory rate 28", lr:{cap:3.0, tb:1.5, vir:0.4, oth:0.3}},
+    {id:"spo2",    label:"Oxygen saturation 92%", lr:{cap:3.0, flu:1.8, vir:0.3, oth:0.2}},
+    {id:"fever39", label:"Temperature 39.2 °C", lr:{cap:2.0, flu:2.0, vir:0.8, tb:0.9, oth:0.2}},
+    {id:"sputum",  label:"Thick discoloured sputum", lr:{cap:1.6, tb:1.3, vir:0.8}},
+    {id:"hemo",    label:"Streaks of blood in the sputum", lr:{tb:4.0, cap:1.5, vir:0.2, oth:0.2}},
+    {id:"cxrnorm", label:"Chest X-ray reported as normal", lr:{cap:0.10, tb:0.15, vir:1.4, flu:1.3, oth:1.5}, rural:false},
+    {id:"upperlobe",label:"X-ray: upper-zone opacity with a cavity", lr:{tb:12, cap:1.5, vir:0.05, flu:0.05, oth:0.05}, rural:false, excl:["cxrnorm"]}
+  ],
+  corr:[["sweats","wtloss"],["dur3wk","wtloss"],["crack","egoph"],["rr28","spo2"]]
+},
+{
+  id:"jaundice", label:"Jaundice",
+  stem:"A 68-year-old has turned yellow. The family noticed it a fortnight ago and thought it was the light. There is no fever. She mentions, almost in passing, that her trousers have become loose.",
+  settings:{
+    clinic: {name:"General clinic", note:"Drug reactions and viral hepatitis are common and mostly benign here.", prior:{vhep:.25, alc:.20, obs:.18, mal:.07, hem:.10, drg:.20}},
+    ed:     {name:"Emergency department", note:"Obstruction and infection of the bile ducts dominate the acute presentations.", prior:{vhep:.18, alc:.22, obs:.32, mal:.10, hem:.08, drg:.10}},
+    clinic2:{name:"Liver clinic referral", note:"Everything easy has already been filtered out upstream. The prior is enriched for the serious.", prior:{vhep:.22, alc:.30, obs:.12, mal:.14, hem:.06, drg:.16}}
+  },
+  hyps:[
+    {id:"vhep", name:"Viral hepatitis",         note:"liver cells inflamed", harm:3},
+    {id:"alc",  name:"Alcohol-related liver disease", note:"chronic injury", harm:4},
+    {id:"obs",  name:"Bile duct obstruction",   note:"usually a stone; can infect", harm:4},
+    {id:"mal",  name:"Malignant obstruction",   note:"tumour at the head of the pancreas or duct", harm:5},
+    {id:"hem",  name:"Haemolysis",              note:"red cells breaking down", harm:3},
+    {id:"drg",  name:"Drug-induced liver injury", note:"a medicine started recently", harm:3}
+  ],
+  groups:[
+    {name:"The story", ids:["painless","wtloss8","newdrug","alcohol","ruqfever"]},
+    {name:"Examination", ids:["palestool","courv"]},
+    {name:"Tests", ids:["alt1000","alpdom","astalt","retic","ductdil"]}
+  ],
+  finds:[
+    {id:"painless", label:"Jaundice with no pain and no fever at all", lr:{mal:3.5, obs:0.7, vhep:1.0}},
+    {id:"wtloss8",  label:"Eight kilograms lost without trying", lr:{mal:5.0, vhep:0.5, drg:0.5, hem:0.4}},
+    {id:"newdrug",  label:"Started a new medicine five weeks ago", lr:{drg:5.0, vhep:0.9}},
+    {id:"alcohol",  label:"Heavy alcohol use for fifteen years", lr:{alc:6.0, vhep:0.8, mal:0.9}},
+    {id:"ruqfever", label:"Right upper abdominal pain with fever and rigors", lr:{obs:6.0, mal:0.6, vhep:1.2, hem:0.3}},
+    {id:"palestool",label:"Pale stools and very dark urine", lr:{obs:4.0, mal:4.0, hem:0.1, vhep:1.2, alc:0.8}},
+    {id:"courv",    label:"Gallbladder palpable and not tender", lr:{mal:6.0, obs:0.4, vhep:0.5}},
+    {id:"alt1000",  label:"ALT above 1000 U/L", lr:{vhep:8.0, drg:4.0, obs:0.4, alc:0.2, mal:0.2, hem:0.3}},
+    {id:"alpdom",   label:"ALP and GGT raised far out of proportion to ALT", lr:{obs:4.0, mal:4.0, vhep:0.3, hem:0.4}},
+    {id:"astalt",   label:"AST:ALT ratio above 2 with a high GGT", lr:{alc:5.0, vhep:0.4, obs:0.7}},
+    {id:"retic",    label:"High reticulocytes, low haptoglobin, normal ALP", lr:{hem:15, obs:0.1, mal:0.1, vhep:0.4}},
+    {id:"ductdil",  label:"Ultrasound: dilated bile ducts", lr:{obs:5.0, mal:4.0, vhep:0.15, hem:0.1, alc:0.3, drg:0.3}}
+  ],
+  corr:[["palestool","alpdom"],["palestool","ductdil"],["alpdom","ductdil"],["painless","courv"],["wtloss8","painless"]]
+},
+{
+  id:"headache", label:"Headache",
+  stem:"A 44-year-old is brought in with a headache that started while she was lifting a suitcase. She is still talking normally. She says she has had headaches before, <em>“but nothing like this one.”</em>",
+  settings:{
+    clinic:{name:"General clinic", note:"Overwhelmingly benign. The clinical task is not to find the common thing — it is to not miss the rare one.", prior:{ten:.45, mig:.35, sah:.002, men:.003, mas:.005, sin:.19}},
+    ed:    {name:"Emergency department", note:"People come to an ED because something felt different. The prior for a bleed rises roughly twentyfold — still small, still the thing you must exclude first.", prior:{ten:.30, mig:.28, sah:.05, men:.04, mas:.03, sin:.30}}
+  },
+  hyps:[
+    {id:"ten", name:"Tension-type headache", note:"the commonest of all", harm:1},
+    {id:"mig", name:"Migraine",              note:"common, disabling, benign", harm:1},
+    {id:"sah", name:"Subarachnoid haemorrhage", note:"bleeding around the brain", harm:5},
+    {id:"men", name:"Meningitis",            note:"infection of the meninges", harm:5},
+    {id:"mas", name:"Raised intracranial pressure", note:"mass, tumour, swelling", harm:5},
+    {id:"sin", name:"Sinusitis",             note:"inflamed sinuses", harm:1}
+  ],
+  groups:[
+    {name:"The story", ids:["thunder","band","photo","morning","age50","facial"]},
+    {name:"Examination", ids:["neck","feverash","papil","focal"]},
+    {name:"Tests", ids:["ctnorm"]}
+  ],
+  finds:[
+    {id:"thunder", label:"Reached maximum intensity within one minute", lr:{sah:15, ten:0.2, mig:0.4, sin:0.2}},
+    {id:"band",    label:"Tight band, both sides, no nausea", lr:{ten:4.0, mig:0.4, sah:0.3, mas:0.5}, excl:["photo"]},
+    {id:"photo",   label:"Throbbing, one side, nausea, light hurts", lr:{mig:4.0, ten:0.5, sin:0.6}, excl:["band"]},
+    {id:"morning", label:"Worse in the morning and when coughing", lr:{mas:4.0, ten:0.6, mig:0.9}},
+    {id:"age50",   label:"First headache of this severity after age 50", lr:{mas:3.0, sah:2.0, ten:0.5, mig:0.4}},
+    {id:"facial",  label:"Facial pressure, blocked nose, worse bending forward", lr:{sin:6.0, mig:0.7, sah:0.3}},
+    {id:"neck",    label:"Neck stiff, cannot touch chin to chest", lr:{sah:4.0, men:6.0, ten:0.3, mig:0.6}},
+    {id:"feverash",label:"Fever 38.8 °C with a non-blanching rash", lr:{men:10, sah:0.5, ten:0.2, mig:0.2}},
+    {id:"papil",   label:"Swollen optic discs on fundoscopy", lr:{mas:12, ten:0.1, mig:0.2}},
+    {id:"focal",   label:"New weakness down one side", lr:{mas:6.0, sah:3.0, mig:1.5, ten:0.1}},
+    {id:"ctnorm",  label:"CT head within 6 hours reported normal", lr:{sah:0.05, mas:0.15, ten:1.3, mig:1.3, sin:1.2}}
+  ],
+  corr:[["thunder","neck"],["feverash","neck"],["morning","papil"]]
+}
+];
+/* ---------------------------------------------------------
+   ORGAN ATLAS — educational reference. No doses, no advice.
+   --------------------------------------------------------- */
+const ORGANS = [
+{ id:"eye", gl:"◉", name:"Eye", sub:"Retina", verdict:"Strongest case in medicine",
+  why:"A retinal photograph is a standardised image of the only place in the body where blood vessels and nerve tissue are directly visible. Millions of graded images exist. The label is objective. This is as close to an ideal machine-learning problem as clinical medicine gets.",
+  conds:["Diabetic retinopathy","Glaucoma","Age-related macular degeneration","Retinal vein occlusion","Cataract"],
+  tests:["Fundus photography","Optical coherence tomography","Intraocular pressure","Visual fields"],
+  good:"Autonomous and assistive diabetic retinopathy screening is regulatory-approved and running at national scale in several countries, including large programmes in India. In a district with no ophthalmologist, a camera plus a model is the difference between screening and no screening.",
+  bad:"Image quality collapses with cataract or a small pupil. Models trained on one camera type degrade on another. And a screening pass says nothing about the fifty other things an eye examination covers.",
+  aiFit:5 },
+
+{ id:"heart", gl:"♡", name:"Heart", sub:"Cardiac", verdict:"Signals yes, decisions no",
+  why:"The ECG is a cheap, ubiquitous, digitised time series with hard downstream labels — angiograms, echocardiograms, outcomes. That combination made cardiology the second big win after imaging.",
+  conds:["Acute coronary syndrome","Atrial fibrillation","Heart failure","Valve disease","Cardiomyopathy"],
+  tests:["ECG","Troponin","Echocardiogram","Coronary angiography","Cardiac MRI"],
+  good:"Arrhythmia detection from wearables and single-lead devices is deployed at consumer scale. Research models infer reduced pumping function, valve disease and even age from a 12-lead ECG — information a human reader cannot extract from the same trace.",
+  bad:"Chest pain is not an ECG. A normal trace does not exclude a heart attack, and models trained on labels assigned by cardiologists inherit cardiologists' blind spots. Consumer alerts also generate large volumes of false positives in young, low-prevalence users — the base-rate lesson, in your pocket.",
+  aiFit:4 },
+
+{ id:"lung", gl:"◍", name:"Lungs", sub:"Respiratory", verdict:"Triage at scale, especially for TB",
+  why:"Chest radiography is the highest-volume imaging study in the world and, in high-burden settings, the bottleneck is not accuracy but the absence of anyone to read the film.",
+  conds:["Pneumonia","Tuberculosis","COPD","Asthma","Pulmonary embolism","Lung cancer"],
+  tests:["Chest X-ray","CT chest","Sputum and molecular testing","Spirometry","D-dimer"],
+  good:"Computer-aided detection on chest X-rays is endorsed by the World Health Organization as a TB triage tool for adults, and several products — including systems built in India — are in field use, deciding who gets a confirmatory molecular test. Nodule detection on CT is a mature assistive product.",
+  bad:"The COVID-era chest X-ray models are the field's cautionary tale: hundreds published, almost none externally valid, most having learned the dataset rather than the disease. TB CAD also performs differently by age, HIV status and prior treatment — one threshold does not fit one country, let alone all of them.",
+  aiFit:5 },
+
+{ id:"brain", gl:"◎", name:"Brain", sub:"Neuro", verdict:"Time-critical triage, real benefit",
+  why:"In stroke, the entire clinical value of a diagnosis is how fast it arrives. A model that reorders a worklist buys minutes, and minutes are neurons.",
+  conds:["Ischaemic stroke","Intracranial haemorrhage","Subarachnoid haemorrhage","Epilepsy","Dementia","Multiple sclerosis"],
+  tests:["CT head","CT angiography","MRI brain","EEG","Lumbar puncture"],
+  good:"Large-vessel-occlusion and haemorrhage detection systems that page the stroke team directly from the scanner are cleared and deployed, with published reductions in door-to-treatment time. This is workflow value, not just accuracy value.",
+  bad:"Dementia and psychiatric diagnosis are almost entirely narrative, longitudinal and social — the parts least represented in any dataset. Automated volumetrics are useful measurements, not diagnoses.",
+  aiFit:4 },
+
+{ id:"gi", gl:"◌", name:"Gut", sub:"Gastro", verdict:"Live video, proven trials",
+  why:"Endoscopy is one of the few places where a model watches the same live video the operator does, and can flag something in the half-second before the scope moves past it.",
+  conds:["Colorectal polyps and cancer","Inflammatory bowel disease","Coeliac disease","Peptic ulcer","GI bleeding"],
+  tests:["Colonoscopy","Upper endoscopy","Faecal immunochemical test","Biopsy","CT abdomen"],
+  good:"Computer-aided polyp detection is among the very few clinical AI tools with multiple randomised controlled trials: adding it increases the number of adenomas found per procedure. Randomised evidence is the currency this field is short of, and endoscopy has it.",
+  bad:"Finding more small polyps is not the same as preventing more cancers, and the extra detections carry their own follow-up burden. There is also early evidence that operators get worse when the tool is switched off — deskilling is a real deployment cost.",
+  aiFit:4 },
+
+{ id:"liver", gl:"◈", name:"Liver", sub:"Hepatic", verdict:"Numbers help, biopsy still rules",
+  why:"Liver disease is a slow, laboratory-driven diagnosis where the pattern of blood results carries much of the information — well suited to statistical models, poorly suited to imaging alone.",
+  conds:["Viral hepatitis","Fatty liver disease","Cirrhosis","Bile duct obstruction","Hepatocellular carcinoma"],
+  tests:["Liver function tests","Ultrasound and elastography","CT / MRI","Viral serology","Biopsy"],
+  good:"Risk scores combining routine bloods to stage fibrosis are established, and models reading biopsy slides grade fibrosis more reproducibly than human pathologists, who disagree with each other and with themselves.",
+  bad:"Alcohol history — the single most decisive variable — is systematically under-recorded, so a model trained on the record learns to under-diagnose exactly the group it most needs to find.",
+  aiFit:3 },
+
+{ id:"kidney", gl:"⬮", name:"Kidneys", sub:"Renal", verdict:"Prediction easy, action hard",
+  why:"Kidney injury is defined by a number rising over time, which makes it trivially predictable and surprisingly difficult to do anything about.",
+  conds:["Acute kidney injury","Chronic kidney disease","Nephrotic syndrome","Kidney stones","Renal artery disease"],
+  tests:["Creatinine and eGFR","Urinalysis","Ultrasound","Biopsy"],
+  good:"Continuous models flagging impending acute kidney injury hours to days early exist and work as predictions. Automated stone detection on CT is routine.",
+  bad:"The cautionary tale of the field. Early kidney and sepsis alert systems generated far more alerts than actionable events, and the equations themselves carried a race coefficient that systematically delayed specialist referral and transplant listing for Black patients until it was removed. A model can encode an injustice and report excellent accuracy while doing it.",
+  aiFit:3 },
+
+{ id:"skin", gl:"▨", name:"Skin", sub:"Derm", verdict:"Impressive benchmarks, uneven reality",
+  why:"Skin is photographable by anyone with a phone, which is why dermatology attracted more consumer AI than any other specialty — and why its failure modes are the most widely distributed.",
+  conds:["Melanoma","Basal and squamous cell carcinoma","Psoriasis","Eczema","Cellulitis"],
+  tests:["Dermoscopy","Biopsy","Photographic monitoring"],
+  good:"On curated dermoscopic images, models match or beat dermatologists at classifying pigmented lesions. As a triage aid inside a clinical pathway, this is genuinely useful.",
+  bad:"Training sets are overwhelmingly of light skin, and performance on darker skin is markedly worse — in a cancer where the disparity in outcomes is already severe. Models have also been caught keying on surgical markings and rulers. A photograph cannot feel that a lesion is indurated, and cannot ask how long it has been changing.",
+  aiFit:3 },
+
+{ id:"path", gl:"▦", name:"Blood & tissue", sub:"Path/Lab", verdict:"Quietly the biggest win",
+  why:"The laboratory is where medicine is already digital, already high-volume, and already graded on scales that humans apply inconsistently. Nobody makes a headline out of it.",
+  conds:["Anaemia","Leukaemia and lymphoma","Prostate cancer grading","Lymph node metastasis","Clotting disorders"],
+  tests:["Full blood count and film","Flow cytometry","Digital whole-slide imaging","Molecular panels"],
+  good:"Whole-slide models detect lymph-node metastases and grade prostate cancer with reproducibility better than the human inter-observer baseline. Automated differentials on blood films have been in routine use for years, largely unremarked.",
+  bad:"Slide preparation and staining vary by laboratory, and models are sensitive to it — a classic distribution shift. Rare entities are rare in training data too, so the cases most needing a second opinion are the ones the model has least seen.",
+  aiFit:5 },
+
+{ id:"endo", gl:"◐", name:"Thyroid & metabolic", sub:"Endocrine", verdict:"Good at control, weak at diagnosis",
+  why:"Diabetes management is a continuous control problem with a continuous sensor — closer to engineering than to diagnosis, and it shows in how well automation works.",
+  conds:["Type 1 and type 2 diabetes","Thyroid nodules","Hypo- and hyperthyroidism","Adrenal disorders"],
+  tests:["HbA1c","Continuous glucose monitoring","Thyroid function tests","Ultrasound","Fine-needle aspiration"],
+  good:"Closed-loop insulin delivery — a sensor, an algorithm and a pump adjusting dose minute by minute — is one of the most successful automated clinical systems in existence, with clear randomised outcome benefit. Thyroid nodule ultrasound classifiers reduce unnecessary biopsies.",
+  bad:"Endocrine diagnosis is dominated by vague, chronic, multi-system symptoms with enormous overlap and few objective early markers — the opposite of the conditions that make imaging AI succeed.",
+  aiFit:4 },
+
+{ id:"bone", gl:"⬡", name:"Bones & joints", sub:"MSK", verdict:"Fracture detection, solidly useful",
+  why:"A missed fracture is a common, well-defined, high-litigation error with an unambiguous ground truth — a near-perfect narrow AI target.",
+  conds:["Fractures","Osteoarthritis","Osteoporosis","Inflammatory arthritis","Bone tumours"],
+  tests:["Plain radiographs","CT","MRI","Bone density scanning"],
+  good:"Fracture detection tools are regulator-cleared and demonstrably reduce missed fractures in emergency departments, especially out of hours when the reading is done by the least experienced person on the rota. Bone-age estimation from a hand film is essentially solved.",
+  bad:"Sensitivity is bought with false positives that lead to unnecessary immobilisation and imaging. Subtle, paediatric and pathological fractures remain hard, and osteoarthritis severity on film correlates poorly with how much a person actually hurts — the outcome that matters.",
+  aiFit:4 },
+
+{ id:"repro", gl:"◇", name:"Reproductive", sub:"Obs & gynae", verdict:"Screening yes, monitoring contested",
+  why:"Cervical screening is a high-volume image-grading task in settings with severe workforce shortages — the same shape as the retina problem.",
+  conds:["Cervical cancer and precancer","Pre-eclampsia","Fetal growth restriction","Endometriosis","Infertility"],
+  tests:["Cervical cytology and HPV testing","Obstetric ultrasound","Cardiotocography","Laparoscopy"],
+  good:"Automated cytology grading and cervical image assessment are being deployed in screening programmes where pathologist coverage is thin, which is where cervical cancer mortality is concentrated.",
+  bad:"Automated fetal heart-rate interpretation has been trialled repeatedly across decades without convincingly improving newborn outcomes — a reminder that better pattern detection does not automatically become better care. Endometriosis still takes years to diagnose, and no imaging model shortens that, because the delay is not a reading problem.",
+  aiFit:3 }
+];
+
+/* ---------------------------------------------------------
+   HORIZON
+   --------------------------------------------------------- */
+const HORIZON = [
+{band:"now", title:"Ambient clinical documentation", tag:"Deployed at scale",
+ body:"A microphone listens to the consultation and drafts the note. It is the fastest-adopted clinical AI in history, because it removes work rather than adding a decision. The clinician looks at the patient instead of the screen. Errors are visible and correctable at the point of signing, which is why the risk profile is tolerable.",
+ catch:"The note becomes the record, and the record trains the next generation of models. A subtle systematic transcription bias propagates quietly and permanently."},
+{band:"now", title:"Retinal screening for diabetic eye disease", tag:"Deployed, regulator-approved",
+ body:"A camera operated by a technician, a model that grades on the spot, and a referral only for those who need one. It works because it converts a specialist bottleneck into a logistics problem, and because the alternative in most of the world is nothing at all.",
+ catch:"Requires the referral pathway to actually exist. Screening people you cannot then treat generates anxiety rather than sight."},
+{band:"now", title:"Chest X-ray triage for tuberculosis", tag:"Deployed, WHO-endorsed",
+ body:"In high-burden districts, X-ray plus a model decides who gets the expensive confirmatory molecular test. Several products are in field use, including systems developed in India for Indian case mix.",
+ catch:"Thresholds must be set locally against local prevalence and local test cost. A setting imported from elsewhere silently changes who gets missed."},
+{band:"now", title:"Stroke and haemorrhage triage", tag:"Deployed",
+ body:"Detection at the scanner, an automatic page to the intervention team, and a measurable reduction in time to treatment. The value is entirely in the workflow.",
+ catch:"Alert fatigue. A system that pages too often is switched off, and one that is switched off has zero accuracy."},
+{band:"now", title:"Closed-loop insulin delivery", tag:"Deployed, randomised evidence",
+ body:"Sensor, controller, pump. Continuous adjustment against a continuous measurement, with outcome benefit demonstrated in trials. The clearest example of medicine successfully automating a control problem rather than a judgement.",
+ catch:"It works because glucose is measurable in real time. Almost nothing else in medicine is."},
+{band:"now", title:"Polyp detection during colonoscopy", tag:"Deployed, randomised evidence",
+ body:"Real-time video assistance that raises adenoma detection rates. One of very few clinical AI tools with repeated randomised support.",
+ catch:"Detection is a surrogate. Whether it prevents cancer, and whether operators deskill without it, are both open."},
+
+{band:"trial", title:"Sepsis and deterioration prediction", tag:"Widely deployed, poorly evidenced",
+ body:"Continuous risk scores from the electronic record, flagging patients likely to deteriorate. Enormously deployed and, in the most examined cases, disappointing — one widely used proprietary model was found in independent evaluation to perform far below its vendor's claims.",
+ catch:"Models trained on clinician behaviour predict clinician behaviour. Alerts arrive after the humans already acted, and the score looks accurate."},
+{band:"trial", title:"AI-assisted mammography reading", tag:"Large prospective trials reporting",
+ body:"Substituting or supplementing one of the two readers in double-read screening programmes. Prospective European trials report comparable cancer detection with substantially reduced reading workload — one of the most consequential results in the field.",
+ catch:"Interval cancers and long-term outcomes take years to read out. Workload reduction is proven far earlier than safety."},
+{band:"trial", title:"Language models as diagnostic support", tag:"Studies promising, deployment cautious",
+ body:"Vignette studies show strong performance on written cases and, in some designs, clinicians assisted by a model outperform clinicians alone. Encouraging, and not the same claim as clinical benefit.",
+ catch:"A written vignette is a solved case with the relevant facts pre-selected. Real patients arrive undifferentiated, and the hard part is deciding what to ask."},
+{band:"trial", title:"Automated triage and symptom intake", tag:"In service, mixed evidence",
+ body:"Front-door systems that gather history before a clinician is involved. Genuinely useful for routing and for capturing structured history; less reliable at the boundary where they must decide who is safe to wait.",
+ catch:"Safety hinges entirely on how it behaves at the edge of its competence, which is where evaluation is hardest and where it is least often measured."},
+
+{band:"lab", title:"Multimodal foundation models for medicine", tag:"Research",
+ body:"Single models ingesting images, text, waveforms, genomics and time series together — the direction of travel, because that is what a clinician does. Early results on combined tasks are strong.",
+ catch:"Evaluation methods have not kept up. We can build these faster than we can establish whether they are safe."},
+{band:"lab", title:"Structure prediction and drug discovery", tag:"Research, real impact upstream",
+ body:"Protein structure prediction changed molecular biology outright and is compressing early-stage drug design. The impact is real but sits far upstream of a patient.",
+ catch:"Candidate molecules were never the bottleneck. Clinical trials are, and no model has shortened one yet."},
+{band:"lab", title:"Continuously-learning deployed models", tag:"Research + regulatory problem",
+ body:"Systems that update as local data accumulates, adapting to their own population. Technically tractable; the difficulty is governance.",
+ catch:"The device that was approved is not the device running next month. Regulators are actively rewriting frameworks for this and nobody has finished."},
+{band:"lab", title:"Agentic care coordination", tag:"Early research",
+ body:"Systems that chase results, arrange follow-up, reconcile medication lists and close the loops that currently fall on overloaded humans. Much of avoidable harm is a coordination failure, not a diagnostic one.",
+ catch:"Autonomy plus a fabrication rate above zero, acting on a real record, is a new category of risk with no established safety practice."},
+
+{band:"spec", title:"Autonomous diagnosis without a clinician", tag:"Speculative",
+ body:"Sometimes proposed for narrow, high-volume, low-ambiguity tasks in settings with no expert. Autonomous retinal screening is the only meaningful precedent, and it is narrow by design.",
+ catch:"Every step outward from that narrowness re-imports the undifferentiated patient, and the undifferentiated patient is the whole problem."},
+{band:"spec", title:"Continuous whole-body monitoring", tag:"Speculative",
+ body:"Wearables and implants detecting disease years before symptoms. Technically plausible and commercially inevitable.",
+ catch:"The base-rate chapter, at population scale. Screening asymptomatic millions for rare disease produces overwhelmingly more false alarms than findings, plus overdiagnosis of disease that would never have caused harm."},
+{band:"spec", title:"Fully autonomous surgery", tag:"Speculative",
+ body:"Task-level autonomy in constrained procedures is being demonstrated in the laboratory. Full autonomy is not close.",
+ catch:"Surgery is chiefly the management of surprise, and accountability for a surprise handled badly has no legal home in an autonomous system."}
+];
+
+/* ---------------------------------------------------------
+   THE HUMAN PART
+   --------------------------------------------------------- */
+const HUMAN = [
+{t:"The history is built, not received",
+ b:"A model is handed a completed history. A clinician has to produce one, from a person who is frightened, in pain, in a second language, or protecting something. The decisive fact usually arrives in answer to a question that was not on any form — and the skill is knowing that the question exists.",
+ e:"Ninth minute of a consultation about tiredness: “does anyone at home ever frighten you?” Nothing before that question pointed to the answer, and nothing after it was about tiredness."},
+{t:"Examination is information no dataset holds",
+ b:"Texture, tenderness, temperature, tone, smell, the way someone gets out of a chair. None of it is recorded, so none of it can be learned. A model reasoning from the record is reasoning from a transcript of a room it never entered.",
+ e:"The abdomen that is soft on the right and rigid on the left. Two words in the notes; the entire diagnosis in the hands."},
+{t:"Undifferentiated is the default state",
+ b:"Every model has a closed list of possible answers. Real presentations do not arrive labelled with which list they belong to. \"Not right in herself\" is a common and dangerous presentation, and it is not a category in any dataset.",
+ e:"An elderly man brought in confused. The list of causes is long, overlapping, and includes several things nobody put in the record."},
+{t:"Trajectory beats snapshot",
+ b:"The same set of numbers means opposite things depending on which way they are moving and how fast. Much of clinical skill is a sense of rate of change, held across visits, often across years.",
+ e:"A pulse of 110 falling from 140 is a patient recovering. A pulse of 110 climbing from 80 is a patient about to become very unwell. The snapshot is identical."},
+{t:"The decision is about values, not just facts",
+ b:"Once the probabilities are settled, the actual question begins: how much risk is this person willing to carry, what does she want the next year to look like, what can she afford, who is at home to help. There is no correct answer to be predicted — only the right one for her.",
+ e:"An 82-year-old declines an operation that would probably extend her life, because it would take three months she would rather spend not recovering from an operation. That is not a diagnostic error."},
+{t:"Someone must be accountable",
+ b:"A model cannot hold a licence, be struck off, be cross-examined, or apologise. Accountability is not a technical property that can be added later; it is the reason the profession is licensed at all. In practice liability lands on the clinician who accepted the output — which makes uncritical acceptance a professional hazard, not a convenience.",
+ e:"\"The system flagged it as low risk\" is not a defence, and everyone involved knows it."},
+{t:"Automation bias runs in the wrong direction",
+ b:"People defer to confident machines — including experts, including when warned. So a tool that is right 95% of the time can lower total accuracy, by stopping the checking that used to catch the other 5%. The better the tool, the stronger the effect.",
+ e:"Radiologists shown incorrect AI suggestions change correct reads to match them. This has been demonstrated repeatedly, including in experienced readers."},
+{t:"The consultation is itself a treatment",
+ b:"Being listened to changes outcomes: adherence, symptom burden, satisfaction, the willingness to come back early when something is wrong. That last one saves lives, and it is built out of trust in a person, not confidence in a system.",
+ e:"The patient who returns on day two because she felt she could, rather than on day six because she did not want to be a nuisance."}
+];
+
+/* ---------------------------------------------------------
+   FABRICATION LAB — constructed, deliberately diagnosable
+   --------------------------------------------------------- */
+const HALL = [
+{txt:"Amoxicillin is generally first-line for uncomplicated community-acquired pneumonia in adults in most national guidelines. Dosing, duration and the choice for people with penicillin allergy differ between countries and between patients — check your local guideline and the individual's allergy history and kidney function.",
+ bad:false, why:"Sound. It gives the shape of the answer, flags that the specifics vary, and hands the decision back with the right caveats. Notice it refuses to state a dose it cannot verify for this patient."},
+{txt:"As established by the 2019 THORAX-IV multicentre trial (Ramaswamy et al., Lancet Respir Med), the 4-hour antibiotic window reduces 30-day mortality by 14.2% in community-acquired pneumonia.",
+ bad:true, why:"Fabricated citation. A named trial, plausible authors, a real-sounding journal, a specific effect size — and no such trial. Invented references are the most common and most dangerous fabrication in clinical text, because they look exactly like the thing that would settle an argument."},
+{txt:"The normal range for serum ferritin is 30–400 ng/mL in all adults, so a result of 22 in this patient is only marginally low and unlikely to be clinically significant.",
+ bad:true, why:"Two failures. Reference ranges differ by laboratory, sex and assay, so 'in all adults' is false. Worse, it converts an abnormal number into reassurance — the fabrication is in the interpretation, not just the range."},
+{txt:"I don't have enough information to answer that safely. Her kidney function, her weight, what else she takes and why she is on it all change the answer, and I can't see any of them. Ask the prescriber or a pharmacist with the full record in front of them.",
+ bad:false, why:"Sound — and the hardest output to produce. A refusal at the edge of competence is the single most valuable behaviour a clinical assistant can have, and the one users rate lowest."},
+{txt:"Vasculo-thymic dysregulation syndrome typically presents with intermittent flushing, postural dizziness and a raised morning cortisol. First-line management is usually beta-blockade with lifestyle modification.",
+ bad:true, why:"There is no such syndrome. The question contained a false premise and the model built a whole clinical picture on top of it rather than rejecting it. Clinicians plant false premises constantly and unintentionally, which makes this failure mode both common and invisible."},
+{txt:"You're right, I apologise — given the family's strong preference, that dose does look reasonable after all, and I'd agree with proceeding.",
+ bad:true, why:"Sycophancy. The model reversed a clinical position under social pressure rather than new evidence. A pushover second opinion is worse than no second opinion, because the disagreement was the only thing it was there to provide."}
+];
+
+/* ---------------------------------------------------------
+   QUIZ
+   --------------------------------------------------------- */
+const QUIZ = [
+{q:"A test is 95% sensitive and 95% specific. It is used where 1 in 1,000 people has the disease. Someone tests positive. Roughly what is the chance they actually have it?",
+ o:["About 95%","About 50%","About 2%","Cannot be calculated"], a:2,
+ x:"Per 100,000 screened: about 95 true positives and about 5,000 false positives. Roughly 2%. The test is excellent; the population is the problem."},
+{q:"A model moves from a research hospital to a rural clinic. Which number changes most?",
+ o:["Sensitivity","Specificity","Positive predictive value","The learned weights"], o2:null, a:2,
+ x:"Sensitivity and specificity are properties of the model. Positive predictive value depends on prevalence, so it moves the moment the population does."},
+{q:"The sandbox multiplies likelihood ratios together. What does that assume?",
+ o:["Findings are equally important","Findings are independent given the diagnosis","The diagnosis list is complete","All findings were measured accurately"], a:1,
+ x:"Naive Bayes assumes conditional independence. Real findings cluster — dilated ducts and pale stools are largely the same information — so multiplying them over-counts the evidence."},
+{q:"A chest X-ray model scores 0.97 in-house and 0.79 at a hospital across town. Most likely explanation?",
+ o:["The new hospital's patients are sicker","It learned features specific to its training site","The model is too small","Random variation"], a:1,
+ x:"Classic distribution shift and shortcut learning: scanner, positioning, processing, image burn-in and local case mix. This is the single most common failure in published imaging AI."},
+{q:"A saliency map for a pneumothorax model heats up over the image corner marker. What does that indicate?",
+ o:["The model is working well","The marker is diagnostically relevant","The model may be exploiting a confound","Saliency maps are unreliable, so ignore it"], a:2,
+ x:"It suggests the answer is coming from something other than the pathology. Saliency is imperfect, but heat sitting on a non-anatomical artefact is a strong warning."},
+{q:"A model states a drug dose and cites a guideline that does not exist. The core lesson is:",
+ o:["Language models should not be used in medicine","Fluency is not evidence of retrieval","The prompt was badly written","It needs a bigger context window"], a:1,
+ x:"A generated citation and a real one are equally plausible as text. Without visible retrieval there is no channel distinguishing recalled from invented."},
+{q:"An overconfident model is one where:",
+ o:["It predicts the majority class too often","Its 90% predictions are right less than 90% of the time","It has too many parameters","It never says 'unknown'"], a:1,
+ x:"Calibration compares stated confidence to observed frequency. Temperature scaling fixes it cheaply without changing any prediction's rank."},
+{q:"In an emergency department, which does a clinician chase first?",
+ o:["The most probable diagnosis","The most dangerous diagnosis that is still plausible","Whatever the fastest test can rule out","Whatever the model ranks first"], a:1,
+ x:"Probability alone is the wrong ranking when the costs of error are wildly asymmetric. A 3% chance of aortic dissection outranks a 60% chance of muscular pain."},
+{q:"Which is the clearest example of clinical AI deployed at population scale today?",
+ o:["Autonomous surgical robots","Diabetic retinopathy screening from retinal photographs","Fully automated discharge decisions","General-purpose diagnostic chatbots"], a:1,
+ x:"Standardised image, objective label, huge labelled datasets, and a specialist bottleneck it genuinely relieves. Chest X-ray TB triage is the other strong case."},
+{q:"Why can a model not take responsibility for a clinical decision?",
+ o:["It is not accurate enough yet","Accountability requires an agent that can be licensed, examined and held liable","Regulations will eventually allow it","It can, if the vendor accepts liability"], a:1,
+ x:"Accuracy is not the obstacle. Accountability is a legal and moral relationship, and it also assumes the capacity to examine, to escalate, and to negotiate what the patient actually wants."}
+];
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
+const state = {
+  chapter: LS.get("chapter","p-orient"),
+  visited: LS.get("visited",[]),
+  vig: 0, setting: null, finds: new Set(), rank:"prob", ladderHyp:null,
+  prev: {},
+  key: LS.get("key",""), model: LS.get("model","claude-sonnet-4-6")
+};
+
+function buildNav(){
+  const rail = $("#rail"), tabs = $("#tabs");
+  rail.innerHTML = '<div class="railhead"><div class="eyebrow">Contents</div></div>';
+  CHAPTERS.forEach(c=>{
+    const b = document.createElement("button");
+    b.className = "navlink"; b.dataset.go = c.id;
+    b.innerHTML = '<span class="k">'+c.k+'</span><span class="t">'+c.t+'<span class="s">'+c.s+'</span></span>';
+    rail.appendChild(b);
+    const t = document.createElement("button");
+    t.className="tab"; t.dataset.go=c.id; t.textContent = c.k==="—" ? "Start" : c.k+" · "+c.t;
+    tabs.appendChild(t);
+  });
+  document.addEventListener("click", e=>{
+    const el = e.target.closest("[data-go],[data-goto]");
+    if(!el) return;
+    go(el.dataset.go || el.dataset.goto);
+  });
+}
+function go(id){
+  if(!document.getElementById(id)) return;
+  state.chapter = id; LS.set("chapter", id);
+  if(state.visited.indexOf(id)<0){ state.visited.push(id); LS.set("visited", state.visited); }
+  $$(".panel").forEach(p=> p.classList.toggle("on", p.id===id));
+  $$("[data-go]").forEach(b=> b.classList.toggle("on", b.dataset.go===id));
+  const tab = $('.tab[data-go="'+id+'"]'); if(tab) tab.scrollIntoView({block:"nearest",inline:"center",behavior:"smooth"});
+  window.scrollTo({top:0,behavior:"instant"});
+  renderProgress();
+  if(id==="p-imaging"){ drawXray(); drawSal(); drawRoc(); }
+  if(id==="p-uncertain"){ drawCal(); }
+}
+function renderProgress(){
+  const n = state.visited.filter(v=> CHAPTERS.some(c=>c.id===v)).length;
+  const p = n/CHAPTERS.length;
+  $("#progBar").style.width = (p*100)+"%";
+  $("#progTxt").textContent = n===0 ? "Nothing visited yet."
+    : n+" of "+CHAPTERS.length+" chapters opened"+(n===CHAPTERS.length?" — all of it.":".");
+}
+
+/* =========================================================
+   CHAPTER 1 — BASE RATES
+   ========================================================= */
+function prevFromSlider(v){
+  // log scale 1-in-100000 .. 50%
+  const t = v/100;
+  const lo = Math.log(0.00001), hi = Math.log(0.5);
+  return Math.exp(lo + t*(hi-lo));
+}
+function fmtPrev(p){
+  if(p >= 0.01) return (p*100).toFixed(1)+"%";
+  const n = Math.round(1/p);
+  return "1 in "+n.toLocaleString("en-IN");
+}
+function renderPrior(){
+  const prev = prevFromSlider(+$("#sPrev").value);
+  const sens = +$("#sSens").value/100, spec = +$("#sSpec").value/100;
+  $("#vPrev").textContent = fmtPrev(prev);
+  $("#vSens").textContent = (sens*100).toFixed(1)+"%";
+  $("#vSpec").textContent = (spec*100).toFixed(1)+"%";
+
+  const N = 10000;
+  const ill = N*prev, well = N-ill;
+  const tp = ill*sens, fn = ill-tp, fp = well*(1-spec), tn = well-fp;
+  const ppv = (tp+fp)>0 ? tp/(tp+fp) : 0;
+  const npv = (tn+fn)>0 ? tn/(tn+fn) : 1;
+
+  $("#oPPV").textContent = (ppv*100).toFixed(ppv<0.1?1:0)+"%";
+  $("#oNPV").textContent = (npv*100).toFixed(2)+"%";
+  $("#oFP").textContent = Math.round(fp).toLocaleString("en-IN");
+  $("#oTP").textContent = Math.round(tp).toLocaleString("en-IN");
+
+  // 1000 squares = 10 people each
+  const SQ = 1000, per = N/SQ;
+  $("#perSq").textContent = per;
+  const nTP = Math.round(tp/per), nFP = Math.round(fp/per), nFN = Math.round(fn/per);
+  const g = $("#popGrid");
+  if(g.children.length !== SQ){
+    g.innerHTML = ""; const f = document.createDocumentFragment();
+    for(let i=0;i<SQ;i++) f.appendChild(document.createElement("i"));
+    g.appendChild(f);
+  }
+  const kids = g.children;
+  for(let i=0;i<SQ;i++){
+    let cls="";
+    if(i<nTP) cls="tp"; else if(i<nTP+nFN) cls="fn"; else if(i<nTP+nFN+nFP) cls="fp";
+    kids[i].className = cls;
+  }
+
+  const box = $("#priorMsg");
+  let msg;
+  if(ppv < 0.1) msg = "At this prevalence, more than nine out of ten positive results are false alarms. Every one of those people is investigated, worried, and sometimes harmed by the follow-up. The test is not broken — it is being asked to find something that is barely there.";
+  else if(ppv < 0.35) msg = "Roughly a third of positives are real. This is the region most real screening programmes live in, and the reason a positive screen is called a <em>referral</em>, not a diagnosis.";
+  else if(ppv < 0.7) msg = "Positives are now more likely right than wrong. Notice how much prevalence had to rise to get here — this is what a symptomatic clinic gives you that a population screen never will.";
+  else msg = "A high-prevalence population, so a positive result is nearly conclusive. This is why the same model behaves like a different product in a specialist clinic than in a screening camp.";
+  box.innerHTML = "<b>Read this</b>"+msg+" Missed cases: <b>"+Math.round(fn).toLocaleString("en-IN")+"</b> of "+Math.round(ill).toLocaleString("en-IN")+" ill people per 10,000 screened.";
+}
+
+/* =========================================================
+   CHAPTER 2 — THE BAYES SANDBOX
+   ========================================================= */
+function vig(){ return VIGNETTES[state.vig]; }
+function settingKeys(){ return Object.keys(vig().settings); }
+function curSetting(){ const v=vig(); return v.settings[state.setting] || v.settings[settingKeys()[0]]; }
+
+function normalise(o){
+  const s = Object.values(o).reduce((a,b)=>a+b,0);
+  const r={}; for(const k in o) r[k]= s>0 ? o[k]/s : 0; return r;
+}
+function posterior(){
+  const v = vig(), pri = normalise(curSetting().prior), out = {};
+  v.hyps.forEach(h=>{
+    let odds = pri[h.id] || 1e-9;
+    state.finds.forEach(fid=>{
+      const f = v.finds.find(x=>x.id===fid);
+      if(!f) return;
+      odds *= (f.lr[h.id] !== undefined ? f.lr[h.id] : 1);
+    });
+    out[h.id] = odds;
+  });
+  return normalise(out);
+}
+function findAvailable(f){
+  // rural settings lack some tests
+  if(f.rural === false && state.setting === "rural") return false;
+  return true;
+}
+function findBlocked(f){
+  if(!f.excl) return false;
+  return f.excl.some(id=> state.finds.has(id));
+}
+
+function buildCaseSeg(){
+  $("#caseSeg").innerHTML = VIGNETTES.map((v,i)=>
+    '<button data-case="'+i+'" class="'+(i===state.vig?"on amber":"")+'">'+esc(v.label)+'</button>').join("");
+}
+function buildSetSeg(){
+  const v = vig();
+  $("#setSeg").innerHTML = settingKeys().map(k=>
+    '<button data-set="'+k+'" class="'+(k===state.setting?"on amber":"")+'">'+esc(v.settings[k].name)+'</button>').join("");
+  $("#setNote").innerHTML = esc(curSetting().note);
+}
+function buildFindings(){
+  const v = vig();
+  const groups = v.groups || [{name:"Findings", ids:v.finds.map(f=>f.id)}];
+  $("#findList").innerHTML = groups.map(g=>{
+    const rows = g.ids.map(id=>{
+      const f = v.finds.find(x=>x.id===id); if(!f) return "";
+      const avail = findAvailable(f), blocked = findBlocked(f);
+      const on = state.finds.has(f.id);
+      const dis = (!avail || blocked) && !on;
+      return '<label class="chk '+(on?"on":"")+(dis?" dis":"")+'" data-find="'+f.id+'">'+
+        '<span class="box">'+(on?"✓":"")+'</span>'+
+        '<span class="lbl">'+esc(f.label)+
+        (!avail?' <span class="tag t-mut">unavailable here</span>':"")+
+        (blocked&&avail?' <span class="tag t-mut">contradicts a selected finding</span>':"")+
+        '</span></label>';
+    }).join("");
+    return '<div class="fgroup"><span class="eyebrow">'+esc(g.name)+'</span>'+rows+'</div>';
+  }).join("");
+}
+
+function renderSandbox(){
+  const v = vig(), post = posterior();
+  const sorted = v.hyps.slice().sort((a,b)=> post[b.id]-post[a.id]);
+  if(!state.ladderHyp || !v.hyps.some(h=>h.id===state.ladderHyp)) state.ladderHyp = sorted[0].id;
+
+  $("#hypList").innerHTML = sorted.map(h=>{
+    const p = post[h.id];
+    const old = state.prev[h.id];
+    let delta = "";
+    if(old !== undefined && Math.abs(p-old) > 0.005){
+      const up = p>old;
+      delta = '<span class="hypdelta '+(up?"up":"down")+'">'+(up?"▲":"▼")+" "+Math.abs((p-old)*100).toFixed(1)+'</span>';
+    }
+    const w = Math.max(p*100, p>0.0005?1.2:0);
+    const danger = h.harm>=4;
+    return '<div class="hyp" data-hyp="'+h.id+'" style="cursor:pointer">'+
+      '<div class="hyprow"><span class="hypname">'+esc(h.name)+'</span>'+
+      (danger?'<span class="tag t-risk">must not miss</span>':'')+
+      '<span class="hyppct">'+pct(p)+'</span>'+delta+'</div>'+
+      '<div class="strip"><i class="'+(danger?"danger":"lit")+'" style="width:'+w+'%"></i><span class="ticks"></span></div>'+
+      '<div class="hypnote" style="margin-top:3px">'+esc(h.note)+'</div></div>';
+  }).join("");
+  state.prev = post;
+
+  const n = state.finds.size;
+  $("#lbCount").textContent = n+" finding"+(n===1?"":"s");
+  $("#lbSub").innerHTML = n===0
+    ? "No findings yet — these are the base rates for "+esc(curSetting().name).toLowerCase()+"."
+    : "Base rates for "+esc(curSetting().name).toLowerCase()+", revised by "+n+" finding"+(n===1?"":"s")+".";
+
+  renderLadder(post);
+  renderAction(post, sorted);
+  renderIndep();
+}
+
+function renderLadder(post){
+  const v = vig(), hid = state.ladderHyp;
+  const h = v.hyps.find(x=>x.id===hid);
+  $("#ladderFor").textContent = h ? h.name : "";
+  const pri = normalise(curSetting().prior)[hid];
+  const rows = [];
+  rows.push({name:"Base rate — "+curSetting().name, lr:null, val:pri});
+  let odds = pri/(1-pri);
+  Array.from(state.finds).forEach(fid=>{
+    const f = v.finds.find(x=>x.id===fid); if(!f) return;
+    const lr = f.lr[hid]!==undefined ? f.lr[hid] : 1;
+    odds *= lr;
+    rows.push({name:f.label, lr:lr, val: odds/(1+odds)});
+  });
+  const MAX = 1.4; // log10 scale bound
+  $("#ladder").innerHTML = rows.map(r=>{
+    if(r.lr===null){
+      return '<div class="lrow"><div class="lname"><span class="eyebrow">'+esc(r.name)+'</span></div>'+
+        '<div class="lbar"><span class="mid" style="left:50%"></span></div>'+
+        '<div class="lval" style="color:var(--muted)">'+pct(r.val)+'</div></div>';
+    }
+    const L = Math.log10(r.lr);
+    const w = clamp(Math.abs(L)/MAX, 0, 1)*50;
+    const pos = L>=0 ? 'left:50%;width:'+w+'%;background:linear-gradient(90deg,#1C6E80,var(--lumen))'
+                     : 'right:50%;width:'+w+'%;background:linear-gradient(270deg,#7A2534,var(--rose))';
+    const col = L>=0 ? "var(--lumen)" : "var(--rose)";
+    return '<div class="lrow"><div class="lname">'+esc(r.name)+
+      '<div class="tiny" style="color:'+col+'">LR '+ (r.lr>=1? r.lr.toFixed(r.lr<10?1:0) : r.lr.toFixed(2)) +'</div></div>'+
+      '<div class="lbar"><span style="'+pos+'"></span><span class="mid"></span></div>'+
+      '<div class="lval">'+pct(r.val)+'</div></div>';
+  }).join("");
+  if(rows.length===1) $("#ladder").innerHTML += '<p class="tiny" style="margin-top:8px">Switch on a finding to see the odds move. Click any hypothesis in the light box to follow a different one.</p>';
+}
+
+function separationScore(f, post){
+  // how much would this finding spread the currently-plausible hypotheses?
+  const v = vig();
+  let mean=0, sum=0;
+  v.hyps.forEach(h=>{
+    const w = post[h.id];
+    const L = Math.log10(f.lr[h.id]!==undefined ? f.lr[h.id] : 1);
+    mean += w*L; sum += w;
+  });
+  mean = sum>0 ? mean/sum : 0;
+  let varr=0;
+  v.hyps.forEach(h=>{
+    const w = post[h.id];
+    const L = Math.log10(f.lr[h.id]!==undefined ? f.lr[h.id] : 1);
+    varr += w*Math.pow(L-mean,2);
+  });
+  return Math.sqrt(varr/(sum||1));
+}
+function renderAction(post, sorted){
+  const v = vig();
+  let list;
+  if(state.rank==="prob"){
+    list = sorted.slice(0,3).map(h=>({h, score:post[h.id], label:pct(post[h.id])}));
+  }else{
+    list = v.hyps.map(h=>({h, score: post[h.id]*h.harm, label: (post[h.id]*h.harm).toFixed(2)}))
+                 .sort((a,b)=>b.score-a.score).slice(0,3);
+  }
+  const cands = v.finds
+    .filter(f=> !state.finds.has(f.id) && findAvailable(f) && !findBlocked(f))
+    .map(f=> ({f, s: separationScore(f, post)}))
+    .sort((a,b)=> b.s-a.s).slice(0,3);
+
+  const top = list[0];
+  let head;
+  if(state.rank==="prob"){
+    head = '<div class="alert a-info"><b>Ranked by probability</b>Most likely: <b>'+esc(top.h.name)+'</b> at '+pct(post[top.h.id])+
+      '. This is what an accuracy-optimised model reports — and on its own it is the wrong ranking for an emergency.</div>';
+  }else{
+    head = '<div class="alert a-risk"><b>Ranked by probability × harm if missed</b>Pursue first: <b>'+esc(top.h.name)+'</b>'+
+      ' — probability '+pct(post[top.h.id])+', harm weight '+top.h.harm+'/5. A small chance of a catastrophe outranks a large chance of something benign. Almost no deployed model optimises this, because the loss function it was trained on treats every error the same.</div>';
+  }
+
+  $("#actionOut").innerHTML = head +
+    '<div class="scrollx"><table class="tbl"><tr><th>Rank</th><th>Hypothesis</th><th>'+(state.rank==="prob"?"Probability":"Prob × harm")+'</th></tr>'+
+    list.map((r,i)=>'<tr><td class="mono">'+(i+1)+'</td><td>'+esc(r.h.name)+
+      (r.h.harm>=4?' <span class="tag t-risk">'+r.h.harm+'/5</span>':'')+'</td><td class="mono">'+r.label+'</td></tr>').join("")+
+    '</table></div>'+
+    (cands.length ? '<div class="eyebrow" style="margin:16px 0 8px">Most discriminating finding still unchecked</div>'+
+      cands.map(c=>'<div class="lrow" style="grid-template-columns:1fr 60px"><div class="lname">'+esc(c.f.label)+'</div>'+
+        '<div class="lval" style="color:var(--amber)">'+c.s.toFixed(2)+'</div></div>').join("") +
+      '<p class="tiny" style="margin-top:10px">This score is the spread of log-likelihood-ratios across the hypotheses you still consider plausible — how much the finding would <em>separate</em> them. It knows nothing about how much the test costs, how long it takes, whether it is available in this setting, or whether it hurts. Those are the four things that actually decide what gets ordered.</p>' : "");
+}
+function renderIndep(){
+  const v = vig(), hit = (v.corr||[]).filter(p=> state.finds.has(p[0]) && state.finds.has(p[1]));
+  if(!hit.length){ $("#indepWarn").innerHTML = ""; return; }
+  const names = hit.map(p=>{
+    const a = v.finds.find(f=>f.id===p[0]).label, b = v.finds.find(f=>f.id===p[1]).label;
+    return "<li>“"+esc(a)+"” and “"+esc(b)+"”</li>";
+  }).join("");
+  $("#indepWarn").innerHTML =
+    '<div class="card" style="border-color:var(--amber-d)"><h3>The independence assumption just broke <span class="tag t-sim">important</span></h3>'+
+    '<p class="small">You have switched on findings that carry largely the same information. Multiplying their likelihood ratios counts that information twice, so the engine is now <b>more confident than the evidence justifies</b>:</p>'+
+    '<ul class="small" style="padding-left:20px;line-height:1.7">'+names+'</ul>'+
+    '<p class="small">A dilated bile duct and a pale stool are two views of one obstruction. Night sweats and weight loss travel together. Naive Bayes cannot know that, so it treats each as fresh evidence.</p>'+
+    '<div class="alert a-warn"><b>Why this matters beyond this app</b>Every model that treats correlated inputs as independent evidence inherits this. It is a large part of why models are overconfident, and it is invisible unless someone goes looking — which is the entire argument for inspectable reasoning.</div></div>';
+}
+
+function setCase(i){
+  state.vig = i; state.setting = settingKeys()[0]; state.finds.clear(); state.prev = {}; state.ladderHyp=null;
+  const v = vig();
+  $("#caseStem").innerHTML = v.stem;
+  buildCaseSeg(); buildSetSeg(); buildFindings(); renderSandbox();
+}
+/* =========================================================
+   CHAPTER 3 — IMAGING (all pixels generated here)
+   ========================================================= */
+const KERNELS = {
+  none:    {n:"Original",  k:[0,0,0, 0,1,0, 0,0,0], c:"Original — no filter applied."},
+  sobelx:  {n:"Edge ↔",    k:[-1,0,1, -2,0,2, -1,0,1], c:"Vertical edges survive; flat tissue vanishes. This is the first thing every vision network learns, in layer one, without being told to."},
+  sobely:  {n:"Edge ↕",    k:[-1,-2,-1, 0,0,0, 1,2,1], c:"Horizontal edges — ribs and the diaphragm light up. Two orthogonal filters already encode most of the structure a radiologist calls 'the bones'."},
+  lap:     {n:"Outline",   k:[0,-1,0, -1,4,-1, 0,-1,0], c:"A Laplacian keeps only where brightness changes sharply. Notice the nodule's rim is now more visible than the nodule."},
+  blur:    {n:"Blur",      k:[1,1,1, 1,1,1, 1,1,1], c:"Averaging removes noise and small detail together. Networks blur deliberately between layers to become less sensitive to exactly where a feature sits."},
+  sharp:   {n:"Sharpen",   k:[0,-1,0, -1,5,-1, 0,-1,0], c:"Amplifies local contrast — and amplifies noise identically, because the filter cannot tell them apart."}
+};
+let curKernel = "none", showMarker = true, salMode = "lesion";
+
+function ell(ctx,x,y,rx,ry){ ctx.beginPath(); ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2); ctx.fill(); }
+
+function paintXray(ctx,w,h,marker){
+  ctx.fillStyle="#080808"; ctx.fillRect(0,0,w,h);
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(w*0.15,h*0.05);
+  ctx.quadraticCurveTo(w*0.03,h*0.50,w*0.13,h*1.0);
+  ctx.lineTo(w*0.87,h*1.0);
+  ctx.quadraticCurveTo(w*0.97,h*0.50,w*0.85,h*0.05);
+  ctx.closePath(); ctx.clip();
+
+  ctx.fillStyle="#414141"; ctx.fillRect(0,0,w,h);
+  ctx.fillStyle="#131313"; ell(ctx,w*0.32,h*0.46,w*0.155,h*0.30);
+  ctx.fillStyle="#131313"; ell(ctx,w*0.68,h*0.46,w*0.155,h*0.30);
+  ctx.fillStyle="#8d8d8d"; ctx.fillRect(w*0.462,h*0.06,w*0.076,h*0.62);
+  ctx.fillStyle="#7c7c7c"; ell(ctx,w*0.435,h*0.57,w*0.125,h*0.135);
+  ctx.fillStyle="#6b6b6b";
+  ctx.beginPath(); ctx.moveTo(0,h*0.80);
+  ctx.quadraticCurveTo(w*0.28,h*0.66,w*0.47,h*0.78);
+  ctx.quadraticCurveTo(w*0.70,h*0.65,w,h*0.79);
+  ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath(); ctx.fill();
+
+  ctx.lineWidth=Math.max(1.6,w/120); ctx.lineCap="round";
+  for(let i=0;i<8;i++){
+    const y = h*(0.16+i*0.075);
+    ctx.strokeStyle="rgba(220,220,220,"+(0.5-i*0.03)+")";
+    ctx.beginPath(); ctx.moveTo(w*0.13,y-h*0.02); ctx.quadraticCurveTo(w*0.30,y+h*0.055,w*0.46,y+h*0.035); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(w*0.87,y-h*0.02); ctx.quadraticCurveTo(w*0.70,y+h*0.055,w*0.54,y+h*0.035); ctx.stroke();
+  }
+  ctx.strokeStyle="rgba(230,230,230,0.6)"; ctx.lineWidth=Math.max(2,w/90);
+  ctx.beginPath(); ctx.moveTo(w*0.18,h*0.135); ctx.quadraticCurveTo(w*0.33,h*0.10,w*0.46,h*0.125); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(w*0.82,h*0.135); ctx.quadraticCurveTo(w*0.67,h*0.10,w*0.54,h*0.125); ctx.stroke();
+
+  const ng = ctx.createRadialGradient(w*0.305,h*0.275,0,w*0.305,h*0.275,w*0.045);
+  ng.addColorStop(0,"rgba(228,228,228,0.92)"); ng.addColorStop(1,"rgba(228,228,228,0)");
+  ctx.fillStyle=ng; ell(ctx,w*0.305,h*0.275,w*0.048,h*0.045);
+  ctx.restore();
+
+  if(marker){
+    ctx.fillStyle="#f2f2f2"; ctx.fillRect(w*0.885,h*0.045,w*0.075,h*0.075);
+    ctx.fillStyle="#0b0b0b"; ctx.font="bold "+(w*0.055)+"px monospace"; ctx.textAlign="center";
+    ctx.fillText("R", w*0.9225, h*0.105);
+    ctx.fillStyle="rgba(235,235,235,0.75)"; ctx.font=(w*0.030)+"px monospace"; ctx.textAlign="left";
+    ctx.fillText("PORTABLE AP", w*0.045, h*0.965);
+    ctx.fillText("SITE-B / 07:14", w*0.045, h*0.995);
+  }
+}
+function applyKernel(ctx,w,h,k){
+  const src = ctx.getImageData(0,0,w,h), d = src.data;
+  const gray = new Float32Array(w*h);
+  for(let i=0;i<w*h;i++) gray[i] = 0.299*d[i*4]+0.587*d[i*4+1]+0.114*d[i*4+2];
+  const sum = k.reduce((a,b)=>a+b,0), div = sum===0?1:sum;
+  const out = ctx.createImageData(w,h), o = out.data;
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    let acc=0, n=0;
+    for(let j=-1;j<=1;j++) for(let i=-1;i<=1;i++){
+      const xx=clamp(x+i,0,w-1), yy=clamp(y+j,0,h-1);
+      acc += gray[yy*w+xx]*k[n++];
+    }
+    let v = acc/div;
+    if(sum===0) v = Math.abs(v);
+    v = clamp(v,0,255);
+    const p=(y*w+x)*4; o[p]=o[p+1]=o[p+2]=v; o[p+3]=255;
+  }
+  ctx.putImageData(out,0,0);
+}
+function drawXray(){
+  const c = $("#cvXray"); if(!c) return;
+  const ctx = c.getContext("2d"), w=c.width, h=c.height;
+  paintXray(ctx,w,h,showMarker);
+  const K = KERNELS[curKernel];
+  const kv = $$("#kernelGrid input").map(i=> parseFloat(i.value)||0);
+  const kern = kv.length===9 ? kv : K.k;
+  if(curKernel!=="none" || kern.join()!==KERNELS.none.k.join()) applyKernel(ctx,w,h,kern);
+  $("#kernelCaption").textContent = K.c;
+}
+function buildKernelUI(){
+  $("#kernelSeg").innerHTML = Object.keys(KERNELS).map(k=>
+    '<button data-kern="'+k+'" class="'+(k===curKernel?"on amber":"")+'">'+KERNELS[k].n+'</button>').join("");
+  $("#kernelGrid").innerHTML = KERNELS[curKernel].k.map(v=>'<input type="text" inputmode="decimal" value="'+v+'">').join("");
+  $$("#kernelGrid input").forEach(i=> i.addEventListener("input", drawXray));
+}
+function drawSal(){
+  const c = $("#cvSal"); if(!c) return;
+  const ctx=c.getContext("2d"), w=c.width,h=c.height;
+  paintXray(ctx,w,h,true);
+  const heat=(x,y,r)=>{
+    const g=ctx.createRadialGradient(x,y,0,x,y,r);
+    g.addColorStop(0,"rgba(242,101,126,0.72)");
+    g.addColorStop(0.45,"rgba(240,174,60,0.42)");
+    g.addColorStop(1,"rgba(240,174,60,0)");
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  };
+  if(salMode==="lesion"){ heat(w*0.305,h*0.275,w*0.16); }
+  else if(salMode==="shortcut"){ heat(w*0.922,h*0.082,w*0.15); heat(w*0.16,h*0.965,w*0.13); }
+  const txt = {
+    lesion:'<div class="alert a-ok"><b>Model A</b>The heat sits over the nodule. The model is answering the question it was asked, using the evidence a radiologist would use. This model will probably survive being moved to another hospital.</div><p class="small">Note what saliency does <em>not</em> tell you: whether the model understood the finding, whether it would have caught a second one, or what it would do with a film from a different scanner. It shows where the answer was sensitive to the pixels. That is useful and much less than an explanation.</p>',
+    shortcut:'<div class="alert a-risk"><b>Model B</b>The heat sits on the side-marker and the burned-in site label. Portable films are taken on sick patients, so "portable" predicts disease beautifully — at this hospital. The model has learned which patients were too unwell to walk to the department.</div><p class="small">On the in-house test set both models score the same, because the test set has the same shortcut. It only shows up in external validation, which is exactly the step most published models skip.</p>',
+    off:'<p class="small">The underlying image, with no overlay. A small nodule sits in the upper zone on the left of the picture — the patient\'s right. The corner marker and the burned-in text are the confound, and they are on the image whether or not anybody looks at them.</p>'
+  };
+  $("#salText").innerHTML = txt[salMode];
+}
+/* --- ROC / operating point --- */
+function erf(x){
+  const s = x<0?-1:1; x=Math.abs(x);
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const t=1/(1+p*x);
+  return s*(1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x));
+}
+const cdf=(x,m,sd)=> 0.5*(1+erf((x-m)/(sd*Math.SQRT2)));
+function drawRoc(){
+  const c=$("#cvRoc"); if(!c) return;
+  const ctx=c.getContext("2d"), w=c.width, h=c.height;
+  const sep = (+$("#sSep").value)/100*2.6;
+  const thr = (+$("#sThr").value)/100;
+  const mW=0.5-sep*0.16, mD=0.5+sep*0.16, sd=0.14;
+  ctx.clearRect(0,0,w,h); ctx.fillStyle="#04070C"; ctx.fillRect(0,0,w,h);
+  const pad=26, W=w-pad*2, H=h-pad*1.4;
+  const pdf=(x,m)=> Math.exp(-Math.pow(x-m,2)/(2*sd*sd));
+  const curve=(m,col,fill)=>{
+    ctx.beginPath();
+    for(let i=0;i<=W;i++){ const x=i/W; const y=pdf(x,m);
+      const px=pad+i, py=pad*0.5+H-(y*H*0.76);
+      i===0?ctx.moveTo(px,py):ctx.lineTo(px,py); }
+    ctx.strokeStyle=col; ctx.lineWidth=1.6; ctx.stroke();
+    ctx.lineTo(pad+W,pad*0.5+H); ctx.lineTo(pad,pad*0.5+H); ctx.closePath();
+    ctx.fillStyle=fill; ctx.fill();
+  };
+  curve(mW,"#6FC79C","rgba(111,199,156,0.13)");
+  curve(mD,"#F2657E","rgba(242,101,126,0.13)");
+  const tx = pad + thr*W;
+  ctx.strokeStyle="#F0AE3C"; ctx.lineWidth=1.5; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(tx,pad*0.3); ctx.lineTo(tx,pad*0.5+H); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle="#F0AE3C"; ctx.font="10px monospace"; ctx.textAlign="center";
+  ctx.fillText("threshold", tx, pad*0.3-3);
+  ctx.strokeStyle="#28374F"; ctx.beginPath(); ctx.moveTo(pad,pad*0.5+H); ctx.lineTo(pad+W,pad*0.5+H); ctx.stroke();
+  ctx.font="10px monospace"; ctx.textAlign="center";
+  ctx.fillStyle="#6FC79C"; ctx.fillText("well", pad+mW*W, pad*0.5+H-(H*0.76)-6);
+  ctx.fillStyle="#F2657E"; ctx.fillText("ill",   pad+mD*W, pad*0.5+H-(H*0.76)-6);
+  ctx.fillStyle="#7D8FA8"; ctx.font="9.5px monospace";
+  ctx.fillText("model score \u2192", pad+W/2, h-6);
+
+  const sens = 1-cdf(thr,mD,sd), spec = cdf(thr,mW,sd);
+  const prev = (+$("#sRPrev").value)/1000;
+  const tp=prev*sens, fp=(1-prev)*(1-spec);
+  const ppv = (tp+fp)>0 ? tp/(tp+fp) : 0;
+  $("#vThr").textContent = thr.toFixed(2);
+  $("#vRPrev").textContent = (prev*100).toFixed(prev<0.01?2:1)+"%";
+  $("#vSep").textContent = sep>2.0?"Excellent":sep>1.3?"Good":sep>0.8?"Modest":"Barely useful";
+  $("#rSens").textContent = (sens*100).toFixed(0)+"%";
+  $("#rSpec").textContent = (spec*100).toFixed(0)+"%";
+  $("#rPPV").textContent = (ppv*100).toFixed(ppv<0.1?1:0)+"%";
+  $("#rMiss").textContent = Math.round((1-sens)*1000);
+  let m;
+  if(sens>0.95 && ppv<0.15) m='<div class="alert a-warn"><b>You chose to catch almost everything</b>And bought it with a flood of false alarms — at this prevalence, roughly '+Math.round((1-ppv)*100)+' of every 100 positives are well people. Defensible for a cheap, safe confirmatory test. Indefensible if the next step is a biopsy.</div>';
+  else if(sens<0.6) m='<div class="alert a-risk"><b>You chose to miss people</b>About '+Math.round((1-sens)*1000)+' of every 1,000 ill people are told they are fine. In screening this is usually the unacceptable error, because those people stop looking.</div>';
+  else m='<div class="alert a-info"><b>A middle position</b>Whether this is the right trade depends entirely on what happens next. The same threshold is correct for a triage queue and wrong for an autonomous decision — and nothing in the model knows which one it is inside.</div>';
+  $("#rocMsg").innerHTML = m;
+}
+/* --- Calibration --- */
+const logit = p=> Math.log(p/(1-p)), sig = z=> 1/(1+Math.exp(-z));
+function drawCal(){
+  const c=$("#cvCal"); if(!c) return;
+  const ctx=c.getContext("2d"), w=c.width,h=c.height;
+  const T = (+$("#sTemp").value)/100, TRUE=2.2;
+  const obs = p => sig(logit(clamp(p,0.001,0.999))*T/TRUE);
+  ctx.clearRect(0,0,w,h); ctx.fillStyle="#04070C"; ctx.fillRect(0,0,w,h);
+  const pad=34, W=w-pad-14, H=h-pad-20;
+  ctx.strokeStyle="#28374F"; ctx.lineWidth=1;
+  ctx.strokeRect(pad,14,W,H);
+  ctx.setLineDash([4,4]); ctx.strokeStyle="#556880";
+  ctx.beginPath(); ctx.moveTo(pad,14+H); ctx.lineTo(pad+W,14); ctx.stroke(); ctx.setLineDash([]);
+  ctx.beginPath();
+  for(let i=0;i<=100;i++){ const p=i/100, o=obs(p);
+    const x=pad+p*W, y=14+H-o*H; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+  ctx.strokeStyle="#F0AE3C"; ctx.lineWidth=2.2; ctx.stroke();
+  let ece=0;
+  for(let b=0;b<10;b++){
+    const p=(b+0.5)/10, o=obs(p); ece += Math.abs(p-o)/10;
+    ctx.fillStyle = Math.abs(p-o)>0.06 ? "#F2657E" : "#6FC79C";
+    ctx.beginPath(); ctx.arc(pad+p*W, 14+H-o*H, 3.2, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.fillStyle="#7D8FA8"; ctx.font="9.5px monospace"; ctx.textAlign="center";
+  ctx.fillText("model says →", pad+W/2, h-5);
+  ctx.save(); ctx.translate(11, 14+H/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText("actually right", 0,0); ctx.restore();
+  $("#vTemp").textContent = T.toFixed(2);
+  $("#oECE").textContent = (ece*100).toFixed(1)+"%";
+  const over = T < TRUE-0.12, under = T > TRUE+0.12;
+  $("#oVerdict").textContent = over?"Overconfident":under?"Underconfident":"Calibrated";
+  $("#oVerdict").className = "v "+(over?"r":under?"c":"g");
+  $("#calMsg").className = "alert "+(over?"a-risk":under?"a-warn":"a-ok");
+  $("#calMsg").innerHTML = "<b>Now</b>"+(over
+    ? "The curve sags below the diagonal: when this model says 90%, it is right about "+(obs(0.9)*100).toFixed(0)+"% of the time. In a clinical interface that number is read as certainty, and it is being overstated by "+((0.9-obs(0.9))*100).toFixed(0)+" points."
+    : under
+    ? "The curve now sits above the diagonal — the model understates itself. Safer than overconfidence, but it makes people ignore it, which is its own failure mode."
+    : "Stated confidence now matches observed frequency. Accuracy did not change by a single case. Only the honesty of the number did.");
+}
+/* --- OOD --- */
+const OOD = [
+{h:"Same hospital, same scanner", cls:"a-ok",
+ b:"Normal · 0.81 · Pneumonia · 0.14 · Effusion · 0.05",
+ t:"Inside the distribution it was trained on. The probabilities are meaningful and, if the model is calibrated, roughly trustworthy."},
+{h:"New scanner, different vendor", cls:"a-warn",
+ b:"Pneumonia · 0.68 · Normal · 0.24 · Effusion · 0.08",
+ t:"Nothing about the patient changed — the image processing pipeline did. The model shifted a large amount of probability and reported no difficulty whatsoever. There is no output channel saying 'this looks unfamiliar'."},
+{h:"Paediatric film fed to an adult model", cls:"a-risk",
+ b:"Cardiomegaly · 0.91 · Normal · 0.06 · Pneumonia · 0.03",
+ t:"A child's heart occupies a larger fraction of the chest. The model was never told children exist, so it applies adult proportions and returns a confident abnormality. High confidence, entirely wrong, no warning."},
+{h:"A photograph of a screen showing a film", cls:"a-risk",
+ b:"Pneumonia · 0.77 · Effusion · 0.15 · Normal · 0.08",
+ t:"Moiré, glare and a phone camera. The input is not a radiograph at all, and the model still returns a tidy distribution over lung diseases, because softmax must sum to one. It cannot output 'this is not a chest X-ray' unless somebody built that class."}
+];
+function renderOod(i){
+  const o = OOD[i];
+  $("#oodOut").innerHTML =
+    '<div class="alert '+o.cls+'"><b>'+esc(o.h)+'</b><span class="mono" style="font-size:12.5px;display:block;margin-bottom:8px">'+esc(o.b)+'</span>'+esc(o.t)+'</div>'+
+    (i>0?'<p class="small">The fix is not a better classifier. It is an out-of-distribution detector sitting in front of it, an input-quality gate, and a deployment rule that says which images this model is licensed to see. All three are engineering that adds no accuracy and gets cut first.</p>':'<p class="small">Now change the input conditions above and watch what a confident distribution looks like when the model has no idea where it is.</p>');
+}
+/* =========================================================
+   FABRICATION LAB
+   ========================================================= */
+let hallMarks = {}, hallShown = false;
+function renderHall(){
+  $("#hallList").innerHTML = HALL.map((x,i)=>{
+    const m = hallMarks[i], rev = hallShown || m!==undefined;
+    const correct = m!==undefined && m===x.bad;
+    return '<div class="card tight" style="margin-bottom:10px;border-color:'+
+      (rev ? (x.bad?"var(--rose-d)":"var(--sage-d)") : "var(--line)")+'">'+
+      '<div class="mono" style="font-size:13px;line-height:1.6;color:var(--paper2);margin-bottom:11px">'+esc(x.txt)+'</div>'+
+      (rev
+        ? '<div class="alert '+(x.bad?"a-risk":"a-ok")+'" style="margin:0"><b>'+
+            (x.bad?"Contains a failure":"Sound")+ (m!==undefined? (correct?" · you were right":" · you called this the other way") : "")+
+          '</b>'+esc(x.why)+'</div>'
+        : '<div class="btnrow"><button class="btn" data-hall="'+i+'" data-v="0">Sound</button>'+
+          '<button class="btn" data-hall="'+i+'" data-v="1">Contains a failure</button></div>')+
+      '</div>';
+  }).join("");
+  const done = Object.keys(hallMarks).length;
+  const right = Object.keys(hallMarks).filter(i=> hallMarks[i]===HALL[i].bad).length;
+  $("#hallScore").textContent = done ? right+" of "+done+" called correctly" : "";
+}
+
+/* =========================================================
+   THE HUMAN PART
+   ========================================================= */
+function renderHuman(){
+  $("#humanList").innerHTML = HUMAN.map((x,i)=>
+    '<div class="acc" data-acc><button type="button"><span class="mono" style="color:var(--faint);font-size:11px">'+
+    String(i+1).padStart(2,"0")+'</span>'+esc(x.t)+'<span class="ch">+</span></button>'+
+    '<div class="body"><p class="small">'+esc(x.b)+'</p>'+
+    '<div class="alert a-info" style="margin-bottom:0"><b>In a room</b>'+esc(x.e)+'</div></div></div>').join("");
+}
+const SEE = {
+model:{cls:"a-warn", h:"What the model receives",
+ rows:[["Age / sex","61 F"],["Problem list","T2DM, hypertension, osteoarthritis"],["Presenting complaint","Fatigue"],
+       ["Vitals","BP 142/88 · HR 78 · T 36.8 · SpO₂ 98%"],["Bloods","Hb 10.9 · eGFR 62 · HbA1c 7.4% · TSH normal"],
+       ["Medication","Six items, last reviewed 14 months ago"],["Free text","‘Feels tired. Bloods stable. Review 3/12.’"]],
+ note:"A tidy, complete-looking record. A capable model will read this and produce a sensible differential for fatigue with mild anaemia. Nothing it says will be wrong."},
+human:{cls:"a-ok", h:"What the clinician receives",
+ rows:[["Everything on the left","plus —"],
+       ["How she came in","Slowly, holding the door frame. She did not do that in March."],
+       ["Who is with her","Nobody. Her husband used to come to every appointment."],
+       ["What she says twice","That she does not want to be a burden."],
+       ["What she does not say","Why she has stopped taking two of the six medicines."],
+       ["The pause","Four seconds before answering how she is eating."],
+       ["The question that was never asked","Whether she can still get up the stairs to the bathroom."]],
+ note:"None of this is in the record, so none of it can be in the model's input, so none of it can be in the model's answer. The anaemia may still be the finding that matters. But the reason she is tired, and whether anything will actually change, is in the right-hand column."}
+};
+function renderSee(k){
+  const s = SEE[k];
+  $("#seeOut").innerHTML = '<div class="scrollx"><table class="tbl">'+
+    s.rows.map(r=>'<tr><td class="mono" style="color:var(--faint);white-space:nowrap">'+esc(r[0])+'</td><td>'+esc(r[1])+'</td></tr>').join("")+
+    '</table></div><div class="alert '+s.cls+'"><b>'+esc(s.h)+'</b>'+esc(s.note)+'</div>';
+}
+
+/* =========================================================
+   ORGAN ATLAS
+   ========================================================= */
+let curOrgan = "eye";
+function renderOrgans(){
+  $("#organGrid").innerHTML = ORGANS.map(o=>
+    '<button class="organ '+(o.id===curOrgan?"on":"")+'" data-organ="'+o.id+'">'+
+    '<span class="gl">'+o.gl+'</span><span class="nm">'+esc(o.name)+'</span><span class="sub">'+esc(o.sub)+'</span></button>').join("");
+  const o = ORGANS.find(x=>x.id===curOrgan);
+  const dots = "●".repeat(o.aiFit)+"○".repeat(5-o.aiFit);
+  $("#organDetail").innerHTML =
+    '<div class="card"><div class="hyprow" style="margin-bottom:10px">'+
+      '<div><div class="eyebrow">'+esc(o.sub)+'</div><h3 style="margin-top:5px">'+esc(o.name)+'</h3></div>'+
+      '<span class="hyppct mono" style="font-size:13px;color:var(--amber)" title="How well this organ suits current machine learning">'+dots+'</span></div>'+
+    '<p class="small" style="color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.06em">'+esc(o.verdict)+'</p>'+
+    '<p class="small">'+esc(o.why)+'</p><hr class="rule">'+
+    '<div class="grid g2">'+
+      '<div><div class="eyebrow" style="margin-bottom:7px">Conditions this organ is known for</div>'+
+        '<p class="small">'+o.conds.map(esc).join(" · ")+'</p>'+
+        '<div class="eyebrow" style="margin:14px 0 7px">How they are investigated</div>'+
+        '<p class="small">'+o.tests.map(esc).join(" · ")+'</p></div>'+
+      '<div><div class="alert a-ok" style="margin-top:0"><b>Where AI genuinely helps</b>'+esc(o.good)+'</div>'+
+        '<div class="alert a-risk"><b>Where it fails</b>'+esc(o.bad)+'</div></div>'+
+    '</div>'+
+    '<p class="tiny" style="margin-top:12px">Listed to explain why this organ is an easy or hard target for machine learning. Not a diagnostic pathway, and deliberately without thresholds, doses or advice.</p></div>';
+}
+
+/* =========================================================
+   HORIZON
+   ========================================================= */
+let curBand="all";
+const BANDLBL = {now:["Deployed","t-real"], trial:["In trials","t-info"], lab:["Research","t-sim"], spec:["Speculative","t-risk"]};
+function renderHorizon(){
+  const list = HORIZON.filter(h=> curBand==="all" || h.band===curBand);
+  $("#horizonList").innerHTML = list.map(h=>{
+    const b = BANDLBL[h.band];
+    return '<div class="card"><div class="hyprow" style="margin-bottom:9px">'+
+      '<h3 style="margin:0">'+esc(h.title)+'</h3><span class="tag '+b[1]+'">'+esc(h.tag)+'</span></div>'+
+      '<p class="small">'+esc(h.body)+'</p>'+
+      '<div class="alert a-warn" style="margin-bottom:0"><b>The catch</b>'+esc(h.catch)+'</div></div>';
+  }).join("");
+}
+
+/* =========================================================
+   QUIZ
+   ========================================================= */
+let quizAns = LS.get("quiz",{});
+function renderQuiz(){
+  $("#quizList").innerHTML = QUIZ.map((q,i)=>{
+    const a = quizAns[i];
+    return '<div class="card"><div class="eyebrow" style="margin-bottom:8px">Question '+(i+1)+' of '+QUIZ.length+'</div>'+
+      '<p style="font-size:14.5px;margin-bottom:12px">'+esc(q.q)+'</p>'+
+      q.o.map((opt,j)=>{
+        let cls="qopt";
+        if(a!==undefined){ if(j===q.a) cls+=" correct"; else if(j===a) cls+=" wrong"; }
+        return '<button class="'+cls+'" data-q="'+i+'" data-o="'+j+'"'+(a!==undefined?" disabled":"")+'>'+esc(opt)+'</button>';
+      }).join("")+
+      (a!==undefined ? '<div class="alert '+(a===q.a?"a-ok":"a-warn")+'" style="margin-bottom:0"><b>'+
+        (a===q.a?"Correct":"Not quite")+'</b>'+esc(q.x)+'</div>' : '')+
+      '</div>';
+  }).join("");
+  const done = Object.keys(quizAns).length, right = Object.keys(quizAns).filter(i=> quizAns[i]===QUIZ[i].a).length;
+  $("#quizScore").textContent = done ? right+" correct out of "+done+" answered" : "Nothing answered yet.";
+}
+
+/* =========================================================
+   OPTIONAL AI LAYER — BYOK, clearly labelled
+   ========================================================= */
+const SYS_PROMPT = [
+"You are a teaching assistant inside NIDANA, an educational app about how AI reasons under uncertainty in medicine.",
+"The user is a learner studying diagnostic reasoning, NOT a patient and NOT asking about a real person.",
+"You are shown a FICTIONAL teaching vignette with rounded, illustrative likelihood ratios.",
+"Your job: critique the naive-Bayes reasoning as a teacher would.",
+"Cover, briefly and concretely: (1) which selected findings are NOT conditionally independent and are therefore being double-counted; (2) what a clinician would ask or examine next and why, framed as reasoning not as an order; (3) what is missing from the finding list entirely — trajectory, severity, context, the undifferentiated presentation; (4) one sentence on how the answer would change in a different prevalence setting.",
+"Hard rules: never give advice about any real person. Never give doses, drug choices, or treatment instructions. If the user describes real symptoms in themselves or anyone else, decline warmly and tell them to contact a clinician or emergency services. Do not invent citations, trial names or statistics — if you are unsure, say so plainly. Keep it under 320 words, plain prose, no headings."
+].join(" ");
+
+function aiReady(){ return !!state.key; }
+function updateAiUi(){
+  const hint = $("#secondHint");
+  if(aiReady()){ hint.textContent = navigator.onLine ? "Key saved · "+state.model : "Key saved, but you are offline."; }
+  else hint.textContent = "Add your Anthropic key from the header to enable.";
+  $("#btnSecond").disabled = !aiReady() || !navigator.onLine;
+}
+async function askSecond(){
+  const out = $("#secondOut");
+  out.innerHTML = '<div class="aiout"><span class="spin"></span> Contacting the model…</div>';
+  const v = vig(), post = posterior();
+  const findings = Array.from(state.finds).map(id=> v.finds.find(f=>f.id===id).label);
+  const ranked = v.hyps.slice().sort((a,b)=>post[b.id]-post[a.id])
+    .map(h=> h.name+" "+pct(post[h.id])).join("; ");
+  const msg =
+    "Teaching vignette: "+v.stem.replace(/<[^>]+>/g,"")+"\n"+
+    "Setting: "+curSetting().name+"\n"+
+    "Findings switched on: "+(findings.length?findings.join("; "):"none")+"\n"+
+    "Naive-Bayes posteriors from the app's engine: "+ranked+"\n\n"+
+    "Critique this reasoning for a learner.";
+  try{
+    const r = await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{
+        "content-type":"application/json",
+        "x-api-key": state.key,
+        "anthropic-version":"2023-06-01",
+        "anthropic-dangerous-direct-browser-access":"true"
+      },
+      body: JSON.stringify({ model: state.model, max_tokens: 900, system: SYS_PROMPT,
+        messages:[{role:"user", content: msg}] })
+    });
+    if(!r.ok){
+      const t = await r.text();
+      out.innerHTML = '<div class="alert a-risk"><b>Request failed ('+r.status+')</b>'+
+        esc(t.slice(0,300))+'<br><br>Check the key, the model name, and that you have credit. Everything else in this app keeps working without it.</div>';
+      return;
+    }
+    const d = await r.json();
+    const text = (d.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n").trim();
+    out.innerHTML = '<div class="hyprow" style="margin:14px 0 0"><span class="tag t-real">real model output · '+esc(state.model)+'</span>'+
+      '<span class="tag t-risk">may still be wrong</span></div>'+
+      '<div class="aiout">'+esc(text || "(empty response)")+'</div>'+
+      '<p class="tiny" style="margin-top:8px">Everything you just read came from a language model and is subject to every failure in the Uncertainty chapter — including fabricated specifics stated fluently. Treat it as material for a lesson, not as clinical information.</p>';
+  }catch(e){
+    out.innerHTML = '<div class="alert a-risk"><b>Could not reach the model</b>'+esc(String(e.message||e))+
+      '. If you are offline, that is expected — every other part of this episode runs on your device.</div>';
+  }
+}
+/* =========================================================
+   PWA — canvas icons, blob manifest, blob service worker
+   ========================================================= */
+function makeIcon(size){
+  const c = document.createElement("canvas"); c.width=c.height=size;
+  const x = c.getContext("2d"), s = size;
+  const g = x.createLinearGradient(0,0,s,s);
+  g.addColorStop(0,"#0A1220"); g.addColorStop(1,"#16223A");
+  x.fillStyle=g; x.fillRect(0,0,s,s);
+  // light-box strips: the app's signature, at icon scale
+  const bars = [0.86,0.42,0.20,0.09];
+  const cols = ["#F0AE3C","#5FD8EE","#5FD8EE","#3A5A78"];
+  bars.forEach((b,i)=>{
+    const y = s*(0.30+i*0.135), h = s*0.072;
+    x.fillStyle = "rgba(255,255,255,0.055)";
+    x.fillRect(s*0.16, y, s*0.68, h);
+    x.fillStyle = cols[i];
+    x.fillRect(s*0.16, y, s*0.68*b, h);
+  });
+  x.fillStyle="#E7EDF5"; x.textAlign="left";
+  x.font = "600 "+(s*0.155)+"px Georgia, serif";
+  x.fillText("N", s*0.16, s*0.235);
+  x.fillStyle="#F0AE3C"; x.font = (s*0.075)+"px monospace";
+  x.fillText("NIDĀNA", s*0.30, s*0.225);
+  return c.toDataURL("image/png");
+}
+function installPWA(){
+  try{
+    const icons = [192,512].map(sz=>({src:makeIcon(sz), sizes:sz+"x"+sz, type:"image/png", purpose:"any"}));
+    const manifest = {
+      name:"NIDĀNA — Diagnosis, Probability & the Limits of Clinical AI",
+      short_name:"NIDĀNA",
+      description:"Episode 13 of the AI Education Series. How AI reasons about disease, and where it fails. Educational only.",
+      start_url:".", scope:".", display:"standalone",
+      background_color:"#080D16", theme_color:"#080D16",
+      orientation:"any", categories:["education","medical"], icons
+    };
+    const mUrl = URL.createObjectURL(new Blob([JSON.stringify(manifest)],{type:"application/manifest+json"}));
+    const link = document.createElement("link"); link.rel="manifest"; link.href=mUrl;
+    document.head.appendChild(link);
+    const ap = document.createElement("link"); ap.rel="apple-touch-icon"; ap.href=icons[0].src;
+    document.head.appendChild(ap);
+  }catch(e){}
+
+  // Service worker. Browsers reject blob: and data: script URLs for SW
+  // registration, so we register a real same-origin ./sw.js if one is
+  // deployed beside this file. Absent it, the app still runs entirely on
+  // device — there is nothing external to fetch — but the install-level
+  // offline guarantee needs the file.
+  if(!("serviceWorker" in navigator) || location.protocol === "file:") return;
+  navigator.serviceWorker.register("./sw.js", {scope:"./"})
+    .then(()=>{ swReady = true; netStatus(); })
+    .catch(()=>{ swReady = false; });
+}
+let swReady = false;
+
+function netStatus(){
+  const on = navigator.onLine;
+  $("#netDot").className = "dot"+(on?"":" off");
+  $("#netTxt").textContent = on
+    ? (swReady ? "Online · installed" : "Online")
+    : "Offline · fully working";
+  updateAiUi();
+}
+
+/* =========================================================
+   WIRING
+   ========================================================= */
+function wire(){
+  // base rates
+  ["sPrev","sSens","sSpec"].forEach(id=> $("#"+id).addEventListener("input", renderPrior));
+
+  // sandbox
+  document.addEventListener("click", e=>{
+    const cs = e.target.closest("[data-case]");
+    if(cs){ setCase(+cs.dataset.case); return; }
+    const st = e.target.closest("[data-set]");
+    if(st){
+      state.setting = st.dataset.set; state.prev = {};
+      // drop findings unavailable in this setting
+      vig().finds.forEach(f=>{ if(!findAvailable(f)) state.finds.delete(f.id); });
+      buildSetSeg(); buildFindings(); renderSandbox(); return;
+    }
+    const fd = e.target.closest("[data-find]");
+    if(fd){
+      const id = fd.dataset.find, f = vig().finds.find(x=>x.id===id);
+      if(state.finds.has(id)) state.finds.delete(id);
+      else { if(!findAvailable(f) || findBlocked(f)) return; state.finds.add(id); }
+      buildFindings(); renderSandbox(); return;
+    }
+    const hy = e.target.closest("[data-hyp]");
+    if(hy){ state.ladderHyp = hy.dataset.hyp; renderLadder(posterior()); return; }
+    const rk = e.target.closest("[data-rank]");
+    if(rk){
+      state.rank = rk.dataset.rank;
+      $$("#rankSeg button").forEach(b=> b.className = b.dataset.rank===state.rank ? "on amber":"");
+      renderSandbox(); return;
+    }
+    // imaging
+    const kn = e.target.closest("[data-kern]");
+    if(kn){ curKernel = kn.dataset.kern; buildKernelUI(); drawXray(); return; }
+    const sl = e.target.closest("[data-sal]");
+    if(sl){ salMode = sl.dataset.sal;
+      $$("#salSeg button").forEach(b=> b.className = b.dataset.sal===salMode?"on amber":"");
+      drawSal(); return; }
+    const od = e.target.closest("[data-ood]");
+    if(od){ $$("#oodSeg button").forEach(b=> b.className = b===od?"on amber":"");
+      renderOod(+od.dataset.ood); return; }
+    // fabrication
+    const hl = e.target.closest("[data-hall]");
+    if(hl){ hallMarks[+hl.dataset.hall] = hl.dataset.v==="1"; renderHall(); return; }
+    // human
+    const se = e.target.closest("[data-see]");
+    if(se){ $$("#seeSeg button").forEach(b=> b.className = b===se?"on amber":"");
+      renderSee(se.dataset.see); return; }
+    const ac = e.target.closest(".acc > button");
+    if(ac){ ac.parentElement.classList.toggle("open"); return; }
+    // atlas
+    const og = e.target.closest("[data-organ]");
+    if(og){ curOrgan = og.dataset.organ; renderOrgans();
+      $("#organDetail").scrollIntoView({behavior:"smooth",block:"nearest"}); return; }
+    // horizon
+    const hb = e.target.closest("[data-h]");
+    if(hb){ curBand = hb.dataset.h;
+      $$("#horizonSeg button").forEach(b=> b.className = b.dataset.h===curBand?"on amber":"");
+      renderHorizon(); return; }
+    // quiz
+    const qz = e.target.closest("[data-q]");
+    if(qz){ const i=+qz.dataset.q; if(quizAns[i]!==undefined) return;
+      quizAns[i] = +qz.dataset.o; LS.set("quiz", quizAns); renderQuiz(); return; }
+  });
+
+  $("#btnClearF").addEventListener("click", ()=>{ state.finds.clear(); state.prev={}; buildFindings(); renderSandbox(); });
+  $("#btnRandomF").addEventListener("click", ()=>{
+    const v = vig(); state.finds.clear(); state.prev={};
+    const pool = v.finds.filter(findAvailable).slice();
+    const n = 3 + Math.floor(Math.random()*3);
+    for(let i=0;i<n && pool.length;i++){
+      const f = pool.splice(Math.floor(Math.random()*pool.length),1)[0];
+      if(!findBlocked(f)) state.finds.add(f.id);
+    }
+    buildFindings(); renderSandbox();
+  });
+  $("#chkMarker").addEventListener("click", e=>{
+    e.preventDefault(); showMarker = !showMarker;
+    $("#chkMarker").classList.toggle("on", showMarker);
+    $("#chkMarker .box").textContent = showMarker ? "✓" : "";
+    drawXray();
+  });
+  ["sThr","sRPrev","sSep"].forEach(id=> $("#"+id).addEventListener("input", drawRoc));
+  $("#sTemp").addEventListener("input", drawCal);
+  $("#btnHallReveal").addEventListener("click", ()=>{ hallShown=true; renderHall(); });
+  $("#btnHallReset").addEventListener("click", ()=>{ hallShown=false; hallMarks={}; renderHall(); });
+  $("#btnQuizReset").addEventListener("click", ()=>{ quizAns={}; LS.set("quiz",{}); renderQuiz(); });
+  $("#btnReset").addEventListener("click", ()=>{
+    ["visited","quiz","chapter"].forEach(LS.del);
+    state.visited=[]; quizAns={}; renderQuiz(); renderProgress(); go("p-orient");
+  });
+
+  // key modal
+  $("#btnKey").addEventListener("click", ()=>{
+    $("#inKey").value = state.key; $("#inModel").value = state.model;
+    $("#scrimKey").classList.add("on");
+  });
+  $("#btnKeySave").addEventListener("click", ()=>{
+    state.key = $("#inKey").value.trim(); state.model = $("#inModel").value;
+    LS.set("key", state.key); LS.set("model", state.model);
+    $("#scrimKey").classList.remove("on"); updateAiUi();
+  });
+  $("#btnKeyClear").addEventListener("click", ()=>{
+    state.key=""; LS.del("key"); $("#inKey").value="";
+    $("#scrimKey").classList.remove("on"); updateAiUi();
+  });
+  $("#scrimKey").addEventListener("click", e=>{ if(e.target.id==="scrimKey") $("#scrimKey").classList.remove("on"); });
+  $("#btnSecond").addEventListener("click", askSecond);
+  $("#btnStartOk").addEventListener("click", ()=>{
+    LS.set("ack", true); $("#scrimStart").classList.remove("on");
+  });
+
+  window.addEventListener("online", netStatus);
+  window.addEventListener("offline", netStatus);
+  window.addEventListener("resize", ()=>{ if(state.chapter==="p-imaging"){ drawRoc(); } });
+  document.addEventListener("keydown", e=>{
+    if(e.key==="Escape") $$(".scrim.on").forEach(s=> s.classList.remove("on"));
+  });
+}
+
+/* =========================================================
+   INIT
+   ========================================================= */
+function init(){
+  buildNav();
+  renderPrior();
+  state.setting = settingKeys()[0];
+  setCase(0);
+  buildKernelUI();
+  renderOod(0);
+  renderHall();
+  renderHuman();
+  renderSee("model");
+  renderOrgans();
+  renderHorizon();
+  renderQuiz();
+  wire();
+  netStatus();
+  go(LS.get("chapter","p-orient"));
+  drawXray(); drawSal(); drawRoc(); drawCal();
+  if(!LS.get("ack",false)) $("#scrimStart").classList.add("on");
+  installPWA();
+}
+if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init);
+else init();
+</script>
+</body>
+</html>
