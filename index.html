@@ -352,6 +352,59 @@ footer .sig b{color:var(--paper2);font-weight:500}
 @keyframes sp{to{transform:rotate(360deg)}}
 .aiout{background:var(--void);border:1px solid var(--line);border-left:2px solid var(--violet);
   border-radius:var(--r);padding:13px 15px;font-size:13.5px;line-height:1.6;white-space:pre-wrap;color:var(--paper2);margin-top:12px}
+/* plain-language layer */
+.plain{
+  background:linear-gradient(180deg,rgba(111,199,156,.075),rgba(111,199,156,.03));
+  border:1px solid var(--sage-d);border-left:3px solid var(--sage);
+  border-radius:var(--r);margin-bottom:20px;overflow:hidden
+}
+.plain > button{
+  width:100%;display:flex;align-items:center;gap:10px;background:none;border:none;
+  color:#C6EBD9;padding:11px 14px;cursor:pointer;text-align:left;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase
+}
+.plain > button .ch{margin-left:auto;font-size:15px;transition:transform .2s;opacity:.7}
+.plain.open > button .ch{transform:rotate(45deg)}
+.plain .pbody{display:none;padding:0 15px 15px}
+.plain.open .pbody{display:block}
+.plain .pbody p{font-size:15px;line-height:1.65;color:#D8EEE4;margin-bottom:11px}
+.plain .pbody p:last-child{margin-bottom:0}
+.plain .pbody b{color:#fff}
+.plain .pbody .an{
+  font-family:var(--serif);font-size:15.5px;line-height:1.6;color:#EAF7F1;
+  border-left:2px solid var(--sage);padding:3px 0 3px 14px;margin:12px 0 4px;display:block
+}
+.lvl{display:flex;gap:0;border:1px solid var(--line);border-radius:100px;overflow:hidden;background:var(--slate)}
+.lvl button{
+  background:none;border:none;color:var(--muted);padding:5px 11px;cursor:pointer;
+  font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;white-space:nowrap
+}
+.lvl button.on{background:rgba(111,199,156,.16);color:var(--sage)}
+@media(max-width:520px){ .lvl button{padding:5px 8px;font-size:9px} .mark .dev{display:none} }
+
+/* everyday scenario cards */
+.scen{display:grid;gap:12px}
+@media(min-width:720px){ .scen{grid-template-columns:repeat(3,1fr)} }
+.scen .s{background:var(--slate2);border:1px solid var(--line);border-radius:var(--r);padding:15px}
+.scen .s .ic{font-size:22px;line-height:1;margin-bottom:9px;display:block}
+.scen .s h4{font-size:14.5px;margin:0 0 7px;font-weight:600}
+.scen .s p{font-size:13px;color:var(--paper2);line-height:1.5;margin:0}
+.scen .s .pun{display:block;margin-top:9px;font-family:var(--mono);font-size:11.5px;color:var(--amber);line-height:1.45}
+
+/* village */
+.village{display:grid;grid-template-columns:repeat(25,1fr);gap:2px;margin:14px 0}
+.village i{aspect-ratio:1;background:#1A2333;border-radius:50%}
+.village i.real{background:var(--rose)}
+.village i.alarm{background:var(--amber)}
+.village i.missed{background:var(--violet)}
+
+/* glossary */
+.gloss dt{font-size:14.5px;font-weight:600;color:var(--paper);margin-top:16px}
+.gloss dt:first-child{margin-top:0}
+.gloss dt .jr{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;margin-left:8px}
+.gloss dd{margin:5px 0 0;font-size:13.5px;color:var(--paper2);line-height:1.55}
+.gloss dd .ex{display:block;margin-top:5px;color:var(--sage);font-size:13px}
+
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
 </style>
 </head>
@@ -365,6 +418,10 @@ footer .sig b{color:var(--paper2);font-weight:500}
       <span class="dev">Ep 13 · Advanced</span>
     </div>
     <div class="hspace"></div>
+    <div class="lvl" id="lvlToggle" title="Reading level">
+      <button data-lvl="plain">Plain</button>
+      <button data-lvl="full" class="on">Full</button>
+    </div>
     <span class="pill" id="netPill"><i class="dot" id="netDot"></i><span id="netTxt">Online</span></span>
     <button class="iconbtn" id="btnKey" title="Bring your own Anthropic key">AI ⚙</button>
   </div>
@@ -377,8 +434,76 @@ footer .sig b{color:var(--paper2);font-weight:500}
     <div class="tabs" id="tabs"></div>
     <main>
 
+<!-- ========== 0 · START HERE ========== -->
+<section class="panel on" id="p-start">
+  <div class="phead">
+    <div class="eyebrow">Start here · no medicine, no maths</div>
+    <h2>Why a very good alarm rings mostly for nothing</h2>
+    <p class="lede">Before any of the medical part, one idea. It has nothing to do with hospitals, and once you have it, the rest of this app is just the same idea wearing a lab coat.</p>
+  </div>
+
+  <div class="card">
+    <h3>Three things you already know</h3>
+    <p class="small" style="margin-bottom:14px">You have met this idea many times without anyone naming it.</p>
+    <div class="scen">
+      <div class="s"><span class="ic">✉</span><h4>Your spam folder</h4>
+        <p>It is very good at spotting spam. And yet, every few weeks, a real email from a real person lands in it.</p>
+        <span class="pun">Because it checks thousands of emails. Even a tiny error rate, times thousands, is a few mistakes every week.</span></div>
+      <div class="s"><span class="ic">🔔</span><h4>A car alarm at night</h4>
+        <p>When you hear one, you turn over and go back to sleep. You do not phone the police.</p>
+        <span class="pun">Because car theft is rare and alarms are loud. Almost every alarm you have ever heard was a cat, a lorry, or wind.</span></div>
+      <div class="s"><span class="ic">🚪</span><h4>The airport gate</h4>
+        <p>It beeps at a huge number of people. Almost every one of them turns out to have a belt buckle or a bunch of keys.</p>
+        <span class="pun">The machine is not broken. It is set to beep at everything, on purpose, because missing one real thing is much worse.</span></div>
+    </div>
+    <div class="alert a-info" style="margin-top:16px"><b>The single idea</b>When the thing you are looking for is <b>rare</b>, most of your alarms will be false — even when the alarm is excellent. Not because it failed. Because there are so many more ordinary people for it to be wrong about.</div>
+  </div>
+
+  <div class="card">
+    <h3>See it happen · a village of 1,000 people</h3>
+    <p class="small">One illness. One test. Every circle below is a person. Move the two sliders and watch who ends up where.</p>
+
+    <div class="grid g2" style="margin-top:14px">
+      <div class="field">
+        <label>How many people actually have it <span id="vVillN">1 person</span></label>
+        <input type="range" id="sVillN" min="1" max="200" value="1">
+      </div>
+      <div class="field">
+        <label>How good the test is <span id="vVillQ">99 out of 100 correct</span></label>
+        <input type="range" id="sVillQ" min="80" max="100" value="99">
+      </div>
+    </div>
+
+    <div class="village" id="villGrid" aria-hidden="true"></div>
+    <div class="legend" style="margin-bottom:14px">
+      <span><s style="background:var(--rose);border-radius:50%"></s>Has it, test said yes</span>
+      <span><s style="background:var(--amber);border-radius:50%"></s>Perfectly well, test still said yes</span>
+      <span><s style="background:var(--violet);border-radius:50%"></s>Has it, test said no</span>
+      <span><s style="background:#1A2333;border-radius:50%"></s>Well, test said no</span>
+    </div>
+
+    <div class="stats" style="margin-bottom:14px">
+      <div class="stat"><div class="v r" id="vAlarms">—</div><div class="k">Told “yes”</div></div>
+      <div class="stat"><div class="v g" id="vTrue">—</div><div class="k">Of those, actually ill</div></div>
+      <div class="stat"><div class="v" id="vChance">—</div><div class="k">So a “yes” means</div></div>
+    </div>
+    <div class="alert a-warn" id="villMsg"><b>What just happened</b>—</div>
+  </div>
+
+  <div class="card">
+    <h3>Now the uncomfortable part</h3>
+    <p class="small">Imagine that village test is not a test at all, but a very clever computer that has looked at a million examples. Everything above stays exactly true. Cleverness does not rescue you from rarity — it never has.</p>
+    <p class="stem" style="font-size:17px;margin-top:14px">So when someone tells you their system is <em>99% accurate</em>, the honest reply is not “that’s impressive.”<br>It is: <em>“accurate on whom?”</em></p>
+    <div class="alert a-ok" style="margin-top:14px"><b>You now have the whole app</b>Everything that follows is this one idea, applied to real diagnosis, real scans, and real AI. If a later chapter feels heavy, come back here — it is always this, underneath.</div>
+    <div class="btnrow" style="margin-top:14px">
+      <button class="btn primary" data-goto="p-orient">Right, take me in →</button>
+      <button class="btn" data-goto="p-gloss">Show me the word list</button>
+    </div>
+  </div>
+</section>
+
 <!-- ========== 0 · ORIENT ========== -->
-<section class="panel on" id="p-orient">
+<section class="panel" id="p-orient">
   <div class="phead">
     <div class="eyebrow">AI Education Series · Episode 13</div>
     <h2>How a machine reasons about disease — and where the reasoning breaks</h2>
@@ -871,11 +996,26 @@ footer .sig b{color:var(--paper2);font-weight:500}
   </div>
 </section>
 
+<!-- ========== GLOSSARY ========== -->
+<section class="panel" id="p-gloss">
+  <div class="phead">
+    <div class="eyebrow">Word list · Śabda</div>
+    <h2>Every term in this app, in ordinary English</h2>
+    <p class="lede">No definition here is more than three sentences, and every one has an everyday example. If a chapter loses you, the word you are stuck on is almost certainly here.</p>
+  </div>
+  <div class="card">
+    <dl class="gloss" id="glossList"></dl>
+  </div>
+  <div class="card">
+    <div class="alert a-info" style="margin:0"><b>One thing worth knowing</b>Almost every term below is a way of describing the same tension: how often something is right, versus how often being right actually matters. Whenever a word feels slippery, ask which of those two it is talking about.</div>
+  </div>
+</section>
+
     </main>
     <footer>
       <div class="sig">
         <b>NIDĀNA</b> · Episode 13 of the AI Education Series<br>
-        Designed &amp; Architected by <b>Krishnamurthy Kandregula</b> · Made by <b>Claude</b><br>
+        Architected by <b>Krishnamurthy Kandregula</b> &amp; Developed by <b>Claude Opus 5</b><br>
         <span style="color:var(--rose)">Educational only. Not medical advice, not a diagnostic device.</span>
       </div>
     </footer>
@@ -945,6 +1085,7 @@ const pct = p => (p*100 < 0.1 && p>0) ? "<0.1%" : (p*100).toFixed(p*100<10?1:0)+
    CHAPTERS
    --------------------------------------------------------- */
 const CHAPTERS = [
+  {id:"p-start",     k:"0", t:"Start here",       s:"plain English"},
   {id:"p-orient",    k:"—", t:"Orientation",      s:"Ārambha"},
   {id:"p-prior",     k:"1", t:"Base rates",       s:"Pūrva"},
   {id:"p-bayes",     k:"2", t:"The sandbox",      s:"Nidāna"},
@@ -953,7 +1094,103 @@ const CHAPTERS = [
   {id:"p-human",     k:"5", t:"The human part",   s:"Manuṣya"},
   {id:"p-atlas",     k:"6", t:"Organ atlas",      s:"Aṅga"},
   {id:"p-future",    k:"7", t:"The horizon",      s:"Bhaviṣya"},
-  {id:"p-quiz",      k:"8", t:"Check yourself",   s:"Parīkṣā"}
+  {id:"p-quiz",      k:"8", t:"Check yourself",   s:"Parīkṣā"},
+  {id:"p-gloss",     k:"◆", t:"Word list",         s:"Śabda"}
+];
+
+/* ---------------------------------------------------------
+   PLAIN-LANGUAGE LAYER
+   One card per chapter. Written for someone with no medical
+   or statistical background. Each ends with an everyday
+   analogy that contains no medicine at all.
+   --------------------------------------------------------- */
+const PLAIN = {
+"p-orient":{
+  p:["This app is about one question: when a machine says someone is probably ill, how much should anyone believe it?",
+     "The answer turns out to depend far less on how clever the machine is, and far more on <b>who it is looking at</b>. A brilliant system pointed at the wrong crowd produces mostly nonsense, and does it with total confidence.",
+     "Every number inside is labelled so you always know what you are looking at: made-up-for-teaching, genuinely real, or a deliberate mistake put there for you to catch."],
+  an:"Like a metal detector on a beach. Its quality matters. But whether it finds gold depends mostly on whether there is any gold in that beach."},
+
+"p-prior":{
+  p:["Here is the thing almost everybody gets wrong. A test being <b>99% accurate</b> does not mean a positive result is 99% likely to be right. Those are two completely different statements.",
+     "If an illness is rare, then nearly everyone the test looks at is well. Even a tiny slip-up rate, applied to that enormous crowd of well people, produces far more false alarms than real finds.",
+     "Drag the sliders on this page until it stops feeling like a trick. It is not a trick — it is just what happens when you multiply a small error by a very large number of people."],
+  an:"A smoke alarm that is right 99 times out of 100 will still wake you at 3am for burnt toast — because you burn toast far more often than your house catches fire."},
+
+"p-bayes":{
+  p:["Doctors do not pick one answer and stop. They hold several possible explanations at once, and every new thing they learn makes some of them more likely and others less likely.",
+     "That is all this page does. Turn a finding on, and every possible explanation is re-weighted at the same moment. Nothing is ever fully ruled in or out — it just becomes more or less believable.",
+     "Then change where the patient is standing. Same person, same symptoms — but a cough in a place where tuberculosis is common means something different from the same cough elsewhere. That single change is the most important thing in the whole app.",
+     "One more thing worth noticing: the most likely answer is not always the one to chase first. A small chance of something catastrophic beats a large chance of something harmless."],
+  an:"Like guessing who is knocking at your door. Footsteps, time of day, whether you ordered anything — each clue shifts your guess, and none of them settles it on its own."},
+
+"p-imaging":{
+  p:["When a computer looks at an X-ray, it does not see a chest. It sees a grid of numbers, and it hunts for combinations of numbers that went with the answer it was taught.",
+     "That creates a strange failure. If every sick patient in its training happened to be photographed with a particular machine, or had a tube already fitted, the computer can learn <b>that</b> instead of the illness — and score brilliantly while being completely wrong about why.",
+     "The second half of this page is about choosing how twitchy to make the system. Catch more real cases and you also raise more false alarms. There is no setting that avoids both, and choosing between them is a human decision, not a technical one."],
+  an:"Like a student who scores full marks because they memorised which answer was longest, not because they understood the subject. Change the exam paper and it all falls apart."},
+
+"p-uncertain":{
+  p:["The dangerous machine is not the one that is wrong. It is the one that is wrong and sounds exactly as sure as when it is right.",
+     "Show a system something it was never taught about and it will not say <em>I don't know</em>. It has no way to. It will pick the closest thing from the only list it has, and state it plainly.",
+     "There is also the invented answer. A system that produces convincing text can produce a convincing reference to a study that does not exist, because a made-up source reads exactly like a real one. Try the six examples near the bottom — some are fine, some are quietly wrong."],
+  an:"Like asking someone confident for directions in a town they have never visited. You get a clear, fluent, detailed answer. It is just not the way to anywhere."},
+
+"p-human":{
+  p:["This chapter is not saying AI is bad at medicine. Some systems genuinely beat people at their one narrow job.",
+     "It is saying that the narrow job is a small slice of what a doctor actually does — and most of the rest never becomes data in the first place. How someone walks in. The four-second pause before answering. What they are not saying. None of it is written down, so none of it can be learned.",
+     "And then there is the part nobody can automate: when it goes wrong, somebody has to be answerable. A system cannot be questioned, cannot be held responsible, and cannot apologise."],
+  an:"A recipe can tell you the steps. It cannot taste the food, notice the guest who is unusually quiet, or decide the evening would be better if everyone just ordered in."},
+
+"p-atlas":{
+  p:["A tour of the body — but really a tour of twelve different <b>kinds of problem</b>.",
+     "The pattern is simple once you see it. Where the job is one clear picture with a clear right answer and millions of past examples, machines do very well. Where the job is a person's story unfolding over months, they barely help at all.",
+     "The eyes and the chest are the great successes, and the reason is not that the machines are cleverer there. It is that in many places there is simply nobody available to look — so a merely-competent machine changes everything."],
+  an:"Machines are excellent at sorting a huge pile of photographs. They are useless at working out why your friend has been quiet for three weeks."},
+
+"p-future":{
+  p:["Sorted by how much evidence there is, rather than by how exciting it sounds. Four groups: already in daily use, being properly tested, still in the laboratory, and frankly speculation.",
+     "The most useful thing already working is the least glamorous: machines writing the notes, so the doctor can look at the patient instead of a screen.",
+     "Each item lists its catch, because every one has a catch. The commonest is that a system can be perfectly accurate and still change nothing, if the alert reaches the wrong person at the wrong moment."],
+  an:"Inventing a faster oven does not help if the kitchen door is locked. Most of these fail on the door, not the oven."},
+
+"p-quiz":{
+  p:["Ten questions. Every single one can be answered from something earlier in this app — nothing here needs medical training.",
+     "You are told why immediately, whichever way you answer. Getting one wrong and reading the explanation is worth more than getting it right by luck.",
+     "At the bottom are five questions to ask anyone who ever tries to sell, publish or install one of these systems. Those five are the real souvenir."],
+  an:"Not an exam. More like checking you can still find your way back to the door with the lights off."},
+
+"p-gloss":{
+  p:["Every term this app uses, explained without jargon, with an everyday example attached.",
+     "You do not need to read it in order or remember any of it. Come here when a word blocks you, then go straight back."],
+  an:"A phrasebook, not a language course."}
+};
+
+/* ---------------------------------------------------------
+   GLOSSARY
+   --------------------------------------------------------- */
+const GLOSS = [
+["Base rate", "prevalence, prior", "How common something is before anybody tests for anything. The most underrated number in this entire subject — it decides what every result afterwards actually means.", "In a town with almost no crime, a shouted alarm is far more likely to be a misunderstanding than a robbery."],
+["False positive", "false alarm", "The test says yes; the truth is no. A perfectly well person told they may be ill.", "Your phone buzzing to say you left your wallet behind, while it is in your pocket."],
+["False negative", "a miss", "The test says no; the truth is yes. Usually the more feared of the two, because the person stops looking for an explanation.", "The smoke alarm staying silent during an actual fire."],
+["Sensitivity", "catch rate", "Of everyone who genuinely has the thing, what fraction does the test catch? High sensitivity means very little slips past.", "A net with very fine holes. Almost nothing swims through — but you also haul up a lot of weed."],
+["Specificity", "leave-alone rate", "Of everyone who genuinely does not have it, what fraction does the test correctly leave alone? High specificity means few false alarms.", "A doorbell that only rings for actual visitors, not for the wind."],
+["Positive predictive value", "what a “yes” is worth", "If the test says yes, what is the chance it is right? This is the number people care about, and the one that changes completely depending on who is being tested.", "The same alarm means one thing in a bank vault and something else entirely in an empty field."],
+["Likelihood ratio", "how much a clue is worth", "A single number for how strongly one finding pushes you towards or away from an explanation. Above 1 pushes towards; below 1 pushes away.", "Muddy boots at the door: mild evidence someone went walking. A wet umbrella too: much stronger."],
+["Prior and posterior", "before and after", "What you believed before the new information, and what you believe after it. Evidence does not create belief from nothing — it revises what was already there.", "You thought the parcel would come Tuesday. Then a text arrives. Now you think Wednesday."],
+["Differential diagnosis", "the shortlist", "The set of explanations a clinician is actively holding open, ranked, and being narrowed as evidence arrives.", "The three or four candidates left on your list when you are working out what is making a noise in the car."],
+["Calibration", "honest confidence", "Whether a stated confidence is truthful. If a system says “90% sure” a hundred times, it should be right about ninety of them. Many are not.", "A weather app that says 90% rain and is dry nine times out of ten. Not useless — just not to be believed at face value."],
+["Overconfidence", "sounding surer than it is", "The single most dangerous property in a clinical system, because it removes the doubt that would have made someone check.", "The friend who gives directions with total conviction and has never been there."],
+["Distribution shift", "new surroundings", "A system meets something unlike anything it was trained on. Performance falls, and — crucially — it does not notice.", "A driver who has only ever driven in one city, suddenly abroad, and still perfectly confident."],
+["Shortcut learning", "right answer, wrong reason", "The system latched onto something that merely travelled alongside the answer, rather than the answer itself. Looks excellent until the surroundings change.", "A dog that seems to know the word “walk”, but is really watching for you picking up the lead."],
+["Hallucination / fabrication", "confidently made up", "Text that reads as authoritative and simply is not true — an invented study, a made-up number, a plausible reference to nothing.", "Someone recounting a film scene in vivid detail that was never in the film."],
+["Out of distribution", "outside what it knows", "Input from outside the system's experience. It will still produce a tidy answer, because usually it has no way to say “this is not my sort of thing”.", "A vending machine given a foreign coin. It either rejects it or gives you something unexpected. It never explains."],
+["Threshold / operating point", "how twitchy to set it", "The line at which a score becomes a decision. Move it and you trade misses against false alarms. Where to put it is a value judgement, not a technical fact.", "Choosing how sensitive to make a car alarm. There is no setting that is right for everyone."],
+["Automation bias", "trusting the machine too much", "People follow confident machines, including when the machine is wrong, and including experts who were warned. A good tool can lower overall accuracy by stopping people checking.", "Driving into a field because the satnav said so, past a sign saying otherwise."],
+["Saliency map", "where it looked", "A picture of which parts of an image most affected the answer. Useful, but not an explanation — it shows where, never why.", "Knowing which page someone stared at. It does not tell you what they were thinking."],
+["Triage", "sorting the queue", "Deciding what to deal with first. Most clinical AI that genuinely works today is doing this rather than making decisions.", "The person at the door of a busy restaurant deciding who is seated next."],
+["Prospective / external validation", "tested properly", "Tested on new patients, going forwards, ideally at a hospital that did not build it. Most published systems have never had this, which is why so many disappoint.", "A recipe that worked in your kitchen, tried in someone else's, with their oven and their ingredients."],
+["Naive Bayes", "the sandbox engine", "The simple arithmetic behind Chapter 2. It multiplies the weight of each clue together — and assumes clues are independent, which they usually are not.", "Two friends both say they saw the same rumour online. That is one piece of evidence, not two — but the arithmetic counts it twice."]
 ];
 
 /* ---------------------------------------------------------
@@ -1360,10 +1597,82 @@ const QUIZ = [
  x:"Accuracy is not the obstacle. Accountability is a legal and moral relationship, and it also assumes the capacity to examine, to escalate, and to negotiate what the patient actually wants."}
 ];
 /* =========================================================
+   PLAIN-LANGUAGE RENDERING + GLOSSARY + VILLAGE
+   ========================================================= */
+let readLvl = LS.get("lvl","full");
+
+function injectPlain(){
+  Object.keys(PLAIN).forEach(id=>{
+    const panel = document.getElementById(id);
+    if(!panel || panel.querySelector(".plain")) return;
+    const d = PLAIN[id];
+    const div = document.createElement("div");
+    div.className = "plain" + (readLvl==="plain" ? " open" : "");
+    div.innerHTML =
+      '<button type="button" data-plain>In plain words<span class="ch">+</span></button>'+
+      '<div class="pbody">'+ d.p.map(x=>"<p>"+x+"</p>").join("") +
+      '<span class="an">'+ d.an +'</span></div>';
+    const head = panel.querySelector(".phead");
+    if(head && head.nextSibling) panel.insertBefore(div, head.nextSibling);
+    else panel.appendChild(div);
+  });
+}
+function setLevel(l){
+  readLvl = l; LS.set("lvl", l);
+  $$("#lvlToggle button").forEach(b=> b.classList.toggle("on", b.dataset.lvl===l));
+  $$(".plain").forEach(p=> p.classList.toggle("open", l==="plain"));
+}
+function renderGloss(){
+  $("#glossList").innerHTML = GLOSS.map(g=>
+    '<dt>'+esc(g[0])+'<span class="jr">'+esc(g[1])+'</span></dt>'+
+    '<dd>'+esc(g[2])+'<span class="ex">→ '+esc(g[3])+'</span></dd>').join("");
+}
+
+/* --- village of 1,000 (plain-language base rate demo) --- */
+function renderVillage(){
+  const N = 1000;
+  const ill = +$("#sVillN").value;
+  const q   = +$("#sVillQ").value/100;
+  $("#vVillN").textContent = ill===1 ? "1 person" : ill+" people";
+  $("#vVillQ").textContent = (q*100).toFixed(0)+" out of 100 correct";
+
+  const well = N-ill;
+  const tp = Math.round(ill*q), fn = ill-tp;
+  const fp = Math.round(well*(1-q));
+  const yes = tp+fp;
+  const chance = yes>0 ? tp/yes : 0;
+
+  $("#vAlarms").textContent = yes;
+  $("#vTrue").textContent = tp;
+  $("#vChance").textContent = (chance*100).toFixed(chance<0.1?1:0)+"%";
+
+  const g = $("#villGrid");
+  if(g.children.length !== N){
+    g.innerHTML=""; const fr=document.createDocumentFragment();
+    for(let i=0;i<N;i++) fr.appendChild(document.createElement("i"));
+    g.appendChild(fr);
+  }
+  const kids = g.children;
+  for(let i=0;i<N;i++){
+    let c="";
+    if(i<tp) c="real"; else if(i<tp+fn) c="missed"; else if(i<tp+fn+fp) c="alarm";
+    kids[i].className=c;
+  }
+
+  let msg;
+  if(chance < 0.15) msg = "Look at the amber circles. Every one is a perfectly well person who has just been told to worry. There are <b>"+fp+"</b> of them and only <b>"+tp+"</b> real cases. The test did nothing wrong — there were simply "+Math.round(well/Math.max(ill,1))+" times more well people for it to be wrong about.";
+  else if(chance < 0.5) msg = "Better, but still: fewer than half the people told “yes” actually have it. This is roughly where real-world screening sits, and it is why a positive result means <em>look into this</em> rather than <em>you have it</em>.";
+  else if(chance < 0.85) msg = "Now a “yes” is more likely right than wrong. Notice what had to change to get here — either the illness became far more common, or the test became near-perfect. Usually only one of those is in anybody's control.";
+  else msg = "Almost every “yes” is now correct. But check the left slider: you got here by making the illness common. The very same test was nearly useless when it was rare. <b>Nothing about the test changed.</b>";
+  $("#villMsg").innerHTML = "<b>What just happened</b>"+msg+
+    (fn>0 ? " Meanwhile <b>"+fn+"</b> "+(fn===1?"person was":"people were")+" told they are fine when they are not." : "");
+}
+
+/* =========================================================
    NAVIGATION
    ========================================================= */
 const state = {
-  chapter: LS.get("chapter","p-orient"),
+  chapter: LS.get("chapter","p-start"),
   visited: LS.get("visited",[]),
   vig: 0, setting: null, finds: new Set(), rank:"prob", ladderHyp:null,
   prev: {},
@@ -2159,6 +2468,10 @@ function netStatus(){
 function wire(){
   // base rates
   ["sPrev","sSens","sSpec"].forEach(id=> $("#"+id).addEventListener("input", renderPrior));
+  // village
+  ["sVillN","sVillQ"].forEach(id=> $("#"+id).addEventListener("input", renderVillage));
+  // reading level
+  $$("#lvlToggle button").forEach(b=> b.addEventListener("click", ()=> setLevel(b.dataset.lvl)));
 
   // sandbox
   document.addEventListener("click", e=>{
@@ -2203,6 +2516,8 @@ function wire(){
     const se = e.target.closest("[data-see]");
     if(se){ $$("#seeSeg button").forEach(b=> b.className = b===se?"on amber":"");
       renderSee(se.dataset.see); return; }
+    const pl = e.target.closest("[data-plain]");
+    if(pl){ pl.parentElement.classList.toggle("open"); return; }
     const ac = e.target.closest(".acc > button");
     if(ac){ ac.parentElement.classList.toggle("open"); return; }
     // atlas
@@ -2244,7 +2559,7 @@ function wire(){
   $("#btnQuizReset").addEventListener("click", ()=>{ quizAns={}; LS.set("quiz",{}); renderQuiz(); });
   $("#btnReset").addEventListener("click", ()=>{
     ["visited","quiz","chapter"].forEach(LS.del);
-    state.visited=[]; quizAns={}; renderQuiz(); renderProgress(); go("p-orient");
+    state.visited=[]; quizAns={}; renderQuiz(); renderProgress(); go("p-start");
   });
 
   // key modal
@@ -2280,6 +2595,10 @@ function wire(){
    ========================================================= */
 function init(){
   buildNav();
+  injectPlain();
+  setLevel(readLvl);
+  renderGloss();
+  renderVillage();
   renderPrior();
   state.setting = settingKeys()[0];
   setCase(0);
@@ -2293,7 +2612,7 @@ function init(){
   renderQuiz();
   wire();
   netStatus();
-  go(LS.get("chapter","p-orient"));
+  go(LS.get("chapter","p-start"));
   drawXray(); drawSal(); drawRoc(); drawCal();
   if(!LS.get("ack",false)) $("#scrimStart").classList.add("on");
   installPWA();
