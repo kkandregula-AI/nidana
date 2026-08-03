@@ -1,9 +1,9 @@
 /* NIDĀNA — offline service worker.
-   Optional. Deploy beside NIDANA.html (or index.html) to make the app
-   installable and genuinely offline. The app itself makes no external
-   requests, so there is nothing else to cache. */
-const CACHE = "nidana-v13";
-const CORE  = ["./", "./index.html", "./NIDANA.html"];
+   Strategy: NETWORK-FIRST for HTML/navigation so a new deploy is picked up
+   immediately; CACHE-FIRST for static sub-resources. Falls back to cache
+   when offline. Bump CACHE on each release to evict old entries. */
+const CACHE = "nidana-v14";
+const CORE  = ["./", "./index.html"];
 
 self.addEventListener("install", e => {
   self.skipWaiting();
@@ -22,19 +22,49 @@ self.addEventListener("activate", e => {
   );
 });
 
+// Allow the page to activate a waiting worker immediately.
+self.addEventListener("message", e => {
+  if (e.data && e.data.type === "SKIP_WAITING") self.skipWaiting();
+});
+
+function isHTML(req) {
+  if (req.mode === "navigate") return true;
+  const a = req.headers.get("accept") || "";
+  return a.includes("text/html");
+}
+
 self.addEventListener("fetch", e => {
-  if (e.request.method !== "GET") return;
-  const url = new URL(e.request.url);
+  const req = e.request;
+  if (req.method !== "GET") return;
+  const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;   // never touch api.anthropic.com
-  e.respondWith(
-    caches.match(e.request).then(hit =>
-      hit || fetch(e.request).then(res => {
-        if (res && res.status === 200 && res.type === "basic") {
+
+  if (isHTML(req)) {
+    // NETWORK-FIRST: always try the live version, cache it, fall back offline.
+    e.respondWith(
+      fetch(req).then(res => {
+        if (res && res.status === 200) {
           const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, copy));
+          caches.open(CACHE).then(c => c.put(req, copy));
         }
         return res;
-      }).catch(() => caches.match("./") || caches.match("./index.html"))
+      }).catch(() =>
+        caches.match(req).then(hit => hit || caches.match("./index.html") || caches.match("./"))
+      )
+    );
+    return;
+  }
+
+  // CACHE-FIRST for everything else (icons, fonts, static assets).
+  e.respondWith(
+    caches.match(req).then(hit =>
+      hit || fetch(req).then(res => {
+        if (res && res.status === 200 && res.type === "basic") {
+          const copy = res.clone();
+          caches.open(CACHE).then(c => c.put(req, copy));
+        }
+        return res;
+      })
     )
   );
 });

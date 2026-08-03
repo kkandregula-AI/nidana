@@ -2448,10 +2448,54 @@ function installPWA(){
   // offline guarantee needs the file.
   if(!("serviceWorker" in navigator) || location.protocol === "file:") return;
   navigator.serviceWorker.register("./sw.js", {scope:"./"})
-    .then(()=>{ swReady = true; netStatus(); })
+    .then(reg=>{
+      swReady = true; netStatus();
+      // Check for a newer deploy on every load and when the tab regains focus.
+      const check = ()=>{ try{ reg.update(); }catch(e){} };
+      check();
+      document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) check(); });
+      reg.addEventListener("updatefound", ()=>{
+        const nw = reg.installing; if(!nw) return;
+        nw.addEventListener("statechange", ()=>{
+          // A new version is installed and an old one is still controlling.
+          if(nw.state === "installed" && navigator.serviceWorker.controller) showUpdateBar();
+        });
+      });
+    })
     .catch(()=>{ swReady = false; });
+
+  // If the controller changes, the new version has taken over — reload once.
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", ()=>{
+    if(reloaded) return; reloaded = true; location.reload();
+  });
 }
 let swReady = false;
+
+function showUpdateBar(){
+  if(document.getElementById("updBar")) return;
+  const bar = document.createElement("div");
+  bar.id = "updBar";
+  bar.style.cssText = "position:fixed;left:0;right:0;bottom:0;z-index:300;"+
+    "background:rgba(240,174,60,.14);border-top:1px solid var(--amber-d);"+
+    "backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);"+
+    "padding:11px 16px calc(11px + env(safe-area-inset-bottom));display:flex;"+
+    "gap:12px;align-items:center;justify-content:center;flex-wrap:wrap";
+  bar.innerHTML =
+    '<span class="mono" style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber)">'+
+    'A newer version is available</span>'+
+    '<button class="btn primary" id="updBtn">Reload</button>'+
+    '<button class="btn" id="updDismiss">Later</button>';
+  document.body.appendChild(bar);
+  document.getElementById("updBtn").addEventListener("click", ()=>{
+    navigator.serviceWorker.getRegistration().then(r=>{
+      if(r && r.waiting) r.waiting.postMessage({type:"SKIP_WAITING"});
+      else location.reload();
+    });
+    setTimeout(()=>location.reload(), 700);
+  });
+  document.getElementById("updDismiss").addEventListener("click", ()=> bar.remove());
+}
 
 function netStatus(){
   const on = navigator.onLine;
